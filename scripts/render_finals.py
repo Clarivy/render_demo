@@ -213,16 +213,29 @@ def main_v2(a, gpus):
     est_total = 0.0
     print(f"[finals v2] film v2 ({os.path.relpath(V2_TABLE, ROOT)}), mode {mode}, GPUs {','.join(gpus)}"
           f"{' (DRY RUN: nothing is rendered or written)' if a.dry_run else ''}")
+    stage_a, notes, probes = [], [], []
     for sid in [s for s in sorted(T, key=lambda k: T[k]["start_frame_in_film"]) if T[s].get("source") == "v1"]:
         n = int(T[sid]["frames"])
         miss = missing_frames(sid, n, mode)
-        print(f"[finals v2] reused {sid}: {n - len(miss)}/{n} frames in renders/{mode}/{sid} (v1, no jobs)"
-              + (f"  WARNING missing {ranges(miss)}" if miss else ""))
-        if sel and sid in sel:
-            print(f"[finals v2]   {sid} is a v1 shot: v2 never re-renders it")
+        if not miss:
+            print(f"[finals v2] reused {sid}: {n}/{n} frames in renders/{mode}/{sid} (v1, no jobs)")
+            continue
+        # A fresh checkout on another cluster (no v1 render cache): render the missing frames with the unchanged v1
+        # script, in stage A. On the original box all v1 frames exist, so this never runs there.
+        if sel is not None and sid not in sel and "v1shots" not in sel:
+            print(f"[finals v2] reused {sid}: {n - len(miss)}/{n} frames (v1)  WARNING missing {ranges(miss)} "
+                  f"(not selected by --shots; add {sid} or v1shots)")
+            continue
+        script = T[sid]["script"]
+        spf = float(T[sid].get("est_s_per_frame", 20))
+        jobs = v2_jobs(sid, script, miss, CHUNK.get(sid, 30), len(gpus), spf, logdir, mode, rdir(sid))
+        est = sum(j["est_s"] for j in jobs)
+        est_total += est
+        print(f"[finals v2] A  {sid:18s} {len(miss):3d}/{n} frames to render with the v1 script {script} "
+              f"(no v1 finals here)  {len(jobs)} job(s) ~{est / 3600:.3f} GPU-h")
+        stage_a += jobs
 
     # ---- stage A: tile scenes, s04_subject, the overscan still -------------------------------------------------
-    stage_a, notes, probes = [], [], []
     for name in tiles:
         if not on(name):
             continue

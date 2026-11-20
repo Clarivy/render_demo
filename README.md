@@ -80,7 +80,8 @@ v2 = v1 + 客户的两条修改意见。完整规格见 `docs/storyboard_v2.md`�
 
 ### 复现 v2
 ```bash
-# 1) 终渲队列（只用 GPU 6/7，只补缺失的帧，可断点续渲）。先看计划：
+# 推荐用 Slurm（4 卡，见下文「在其他集群复现」）：sbatch scripts/slurm_render.sbatch --film v2
+# 1) 终渲队列（不在 Slurm 里时只用 GPU 6/7，只补缺失的帧，可断点续渲）。先看计划：
 python3 scripts/render_finals.py --film v2 --dry-run
 #    顺序：12 个小场景 shots/t_*.py（按各自 meta 的循环长度）+ S04（180 帧）+ S04 的 overscan 静帧
 #    → scripts/make_hex_tiles.py --require-final（蜂巢贴图必须全部来自终渲，否则不渲 S05）→ S05（180 帧）
@@ -111,3 +112,43 @@ tools/venv/bin/python -I scripts/assemble.py --film v2 --mode preview --allow-mi
 | `logs/finals_v2/`、`renders/qa/v2/` | v2 的渲染日志、质检报告和差异热图 |
 
 v1 不受影响：v1 的成片、`renders/final/<v1 镜头>`、`versions/v1/` 都不会被 v2 改写；S01–S03 的 v1 终渲帧只读复用。
+
+## 在其他集群复现
+
+代码在 git 里（`v1` 标签 = 交付的 v1；`main` = v2）。git 之外的东西放在一个**数据包**里：素材、确切版本的工具，以及可选的渲染缓存。数据包由 `scripts/make_bundle.sh` 生成，每个文件都有校验和。
+
+| 依赖 | 锁定方式 |
+|---|---|
+| Blender 4.5.15 LTS | 官方安装包 `blender-4.5.15-linux-x64.tar.xz`，sha256 记在 `repro/tools.sha256`（已核对：与原机器上的二进制逐字节一致） |
+| ffmpeg 7.0.2 static | 原机器上用的那份打进数据包（上游已不再提供 7.0.2），sha256 同上 |
+| Python 辅助环境 | `repro/requirements.txt`（numpy / opencv-python-headless / pillow / fonttools 的确切版本），Python ≥ 3.11 |
+| 素材（119 个文件，1.5 GB） | 数据包 `render_demo_assets.tar.zst`；每个文件的 sha256 记在 `repro/assets.sha256` |
+| v1 的 S01–S03 终渲帧（v2 复用） | 可选缓存 `render_demo_cache_v1_s01_s03.tar`（2.8 GB）；不带缓存时，队列会重新渲染这三个镜头，约 2.5 GPU 小时 |
+
+当前数据包位置：`/beegfs/users/qzhao/render_demo/bundles/`（里面有 `SHA256SUMS`）。BeeGFS 只挂在本集群上，换集群时需要先把这个目录整体拷过去（`rsync -a`，或上传到 S3/R2 再下载）。
+
+```bash
+# 0) 在原机器上（素材有改动时）重新打包：
+scripts/make_bundle.sh /beegfs/users/qzhao/render_demo/bundles --with-cache
+
+# 1) 在新集群上：项目目录必须放在计算节点也能访问的共享存储上
+git clone <repo> render_demo && cd render_demo
+rsync -a <原集群>:/beegfs/users/qzhao/render_demo/bundles/ /shared/path/render_demo_bundle/
+scripts/bootstrap.sh --bundle /shared/path/render_demo_bundle --cache [--data-root /shared/big/render_demo]
+#    会校验数据包 → 解压 Blender/ffmpeg → 建 venv → 解压素材并逐个核对 sha256 → 做冒烟检查
+#    --data-root：把 renders/ out/ tools/ assets/ logs/ 放到大容量存储上，在项目里建软链接（和原机器一样）
+#    没有数据包时可用 --download：从官网下载 Blender（核对 sha256）、最新版静态 ffmpeg，素材用
+#    scripts/fetch_assets.py + scripts/derive_assets.py 重新下载和生成（上游文件可能已变，会报告与清单不一致的文件）
+
+# 2) 渲染（只补缺失或损坏的帧，可重复提交续渲；作业内只能用 Slurm 分到的 GPU）
+sbatch -p <partition> --gres=gpu:4 scripts/slurm_render.sbatch --film v2
+#    Crusoe 这类不能按卡隔离的集群，请申请整节点：--gres=gpu:8 --exclusive
+
+# 3) 质检 + 字幕 + 合成 + 编码（CPU）→ out/v2/
+sbatch -p <partition> scripts/slurm_post.sbatch --film v2
+```
+
+说明：
+- GPU 限制（`lib/dopa.py` 的 `_gpu_guard`）：在 Slurm 作业里允许作业分到的卡；不在 Slurm 里时默认只允许 6/7 号卡（原机器的约定），可以用环境变量 `DOPA_ALLOWED_GPUS=0,1` 改。
+- 不同型号的 GPU 或不同驱动渲出来的画面会有噪点级别的差异（Cycles 的 GPU 浮点误差），画面内容和数值 QA 不受影响。
+- 原机器（br-dfw-h200-tlv1-10）上：`renders/ out/ tools/ assets/` 是指向 `/beegfs/users/qzhao/render_demo/` 的软链接，由 `scripts/offload_to_beegfs.sh` 迁移，原因是系统盘有 40 GB 的用户配额。`scripts/slurm_finals_v2.sbatch` 是固定在这台节点上的版本。

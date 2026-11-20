@@ -1,0 +1,16 @@
+# Large or machine-specific trees. On the original box they are symlinks to /beegfs/users/qzhao/render_demo/<dir>;
+# on a fresh checkout scripts/bootstrap.sh creates them from the data bundle (see README "在其他集群复现").
+/renders
+/out
+/tools
+/assets
+/logs
+
+# Python / Blender droppings
+__pycache__/
+*.pyc
+*.blend1
+
+# Client reference material (unpublished paper text and figure); not needed to render
+/intro.tex
+/teaser.pdf

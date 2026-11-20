@@ -1,0 +1,172 @@
+{
+ "id": "s04_subject",
+ "status": "done",
+ "summary": "S04 v2 'Frame the subject' is built and QA'd at preview, with a final-mode cost probe. f1-30 are v1 (camera keys f0-30 bit-identical; pixels at the GPU's run-to-run noise floor at preview and final). One log-distance push from f31 runs to x7.000 (frame height 0.496 of the canvas, 6.1 texels/px, square, f/11), centred on uv (0.486, 0.637). The SETTLE peaks at x7.42 on the f136 beat and comes to rest at f149. f150-180 is a static hold, with identical keys and pixel differences at dither level. There is no orb, no dot-pop, no bloom. The --overscan still is checked at preview and final; final crop vs f180: mean 0.61/255, p99 2.56/255 after a 1 px blur. Final cost is 7.1 s/frame on GPU 6 alone: 0.39 GPU-h for 180 frames in the queue's 3 jobs, plus 0.016 GPU-h for the overscan still (cap 0.45). This session (it continued an interrupted build): re-checked the preview QA, measured the clean final cost, fixed a wrong docstring claim (peak margins), documented the --overscan interface, added cost_final / zoom_end / built_mode to the meta (rebuilt in final mode) and checked the interface against scripts/render_finals.py --film v2 (they agree). Lead follow-up (17:00-17:50): the overscan's mirror extension, which folded trunks into V/diamond shapes, is replaced by a generated pointillist foliage band. scripts/make_seurat_ext.py (CPU, deterministic, seed 7) writes assets/paintings/derived/seurat_grande_jatte_{20000,8192,2048}_topband.png + seurat_grande_jatte_ext.json. In --overscan the shader keeps the original JPEG for v <= 0.9365 (the whole f180 frame and everything below it) and cross-fades to the band above. The band has no mirrored structure and no seam, and it hides the painted border. Preview overscan re-rendered, crop QA unchanged (mean 0.784/255, p99 3.06); hex tile c_painting refreshed. f_0001-0180 are unchanged (a re-rendered preview f180 matches within GPU noise).",
+ "files": [
+  "shots/s04_subject.py",
+  "renders/meta/s04_subject.json",
+  "renders/preview/s04_subject/f_0001.png .. f_0180.png (all 180 frames, preview)",
+  "renders/preview/s04_subject/overscan.png (1272x1102)",
+  "renders/review/s04_subject_sheet.png",
+  "renders/test/s04_subject_cost/ (final f20,45,70,95,120,136,150,180 + cost_probe.json)",
+  "renders/test/s04_subject_cost2/ (final f165,1,5,10,25,31,60,85,110,142 + cost_probe.json)",
+  "renders/test/s04_subject/ (earlier probe frames, timings contaminated by a shared GPU 6; not used)",
+  "renders/test/s04_subject_s96/, renders/test/s04_subject_v1ref/ (earlier tests)",
+  "renders/work/s04_subject/qa_preview.py, qa_preview.json (v1 identity, hold, consecutive-diff profile)",
+  "renders/work/s04_subject/qa_overscan.py (MODE [F180] [OVERSCAN]), overscan_qa_preview_heat.png, overscan_qa_final_heat.png",
+  "renders/work/s04_subject/cost_probe2.py (final cost probe with nvidia-smi sharing check)",
+  "renders/work/s04_subject/plane_flow_profile.json (analytic wall-plane flow), flow_profile_preview.json (optical flow)",
+  "renders/work/s04_subject/review_sheet.py, v1ref_run.py, s04_every_dot_v1_ref.py, v1ref_meta.json",
+  "renders/work/s04_subject/final_f180_detail_1to1.png, final_overscan_topband.png, final_f070_f136.png",
+  "docs/reports/s04_subject_build_v2.json",
+  "scripts/make_seurat_ext.py (new: generator of the overscan foliage band; lead follow-up)",
+  "assets/paintings/derived/seurat_grande_jatte_20000_topband.png (20000x3135), _8192_topband.png (8192x1284), _2048_topband.png (2048x321)",
+  "assets/paintings/derived/seurat_grande_jatte_ext.json (band geometry per resolution, cross-fade / feather windows, seed, parameters)",
+  "renders/preview/s04_subject/overscan.png (re-rendered with the band, 17:41)",
+  "renders/hex_tiles/c_painting/still.png (refreshed by make_hex_tiles.py --only c_painting, 17:43)",
+  "renders/work/s04_subject/ovs_top_v2.png (top 420 rows of the new preview overscan, 1:1), ovs_top_before_after.png",
+  "renders/work/s04_subject/overscan_preview_mirror_superseded.png, final_overscan_topband_mirror_superseded.png, overscan_qa_final_heat_mirror_superseded.png (old mirror version, kept for reference)",
+  "renders/test/s04_subject_ovs_final_mirror_superseded/overscan.png (final test still of the superseded mirror version)",
+  "renders/test/s04_subject_f180_recheck/f_0180.png (preview f180 re-rendered with the new script)"
+ ],
+ "review_images": [
+  "renders/review/s04_subject_sheet.png",
+  "renders/preview/s04_subject/f_0180.png",
+  "renders/preview/s04_subject/f_0136.png",
+  "renders/preview/s04_subject/overscan.png",
+  "renders/work/s04_subject/final_f180_detail_1to1.png",
+  "renders/work/s04_subject/final_f070_f136.png",
+  "renders/work/s04_subject/ovs_top_v2.png",
+  "renders/work/s04_subject/ovs_top_before_after.png",
+  "renders/hex_tiles/c_painting/still.png"
+ ],
+ "qa": [
+  {
+   "check": "f1-30 camera = v1 (no-render dumps of both scripts)",
+   "value": "f0-30: camera matrix, lens, sensor, f-stop, focus distance, shutter bit-identical; first difference f31 focus (+2.2 mm, push start); same renderable objects/lights at f1/20/30; v2 has no compositor (v1: Glare, inactive in f1-30)",
+   "pass": true
+  },
+  {
+   "check": "f1-30 pixels vs v1 previews (renders/preview/s04_every_dot)",
+   "value": "mean of means 0.039/255, worst mean 0.044/255, worst p99.9 1.0/255, worst max 11/255, 3.9 % px > 0.5/255; v1 script re-rendered today vs the same v1 previews: f1 0.032 / max 1, f20 0.044 / max 11, so this is the GPU run-to-run noise floor",
+   "pass": true
+  },
+  {
+   "check": "f1-25 pixels vs v1 finals (final mode)",
+   "value": "f1/5/10/25 vs renders/final/s04_every_dot: mean 0.028-0.036/255, p99.9 <= 0.44/255, max 0.8-7.1/255 (sparse noise)",
+   "pass": true
+  },
+  {
+   "check": "f150-180 static",
+   "value": "keys f149-180 identical (camera, target, DOF, shutter); preview consecutive mean 0.036/255 avg, worst 0.037, max 1/255 (8-bit dither); final f150 vs f151/165/180 (one process) mean 0.036/255, max 0.8/255; f152 from another process max 4.7/255 (GPU run-to-run)",
+   "pass": true
+  },
+  {
+   "check": "motion profile / no hitch",
+   "value": "analytic wall-plane RMS flow: one lobe 0.2 -> 23.9 px/f (f61-62) -> 0.7 (f136 reversal), SETTLE lobe 5.3 px/f (f141) -> 0 (f149); no local minimum f31-135; zoom, pan and subject-glide rates each a single lobe; optical-flow p90 on the previews: no dip > 15 % vs neighbours f33-128",
+   "pass": true
+  },
+  {
+   "check": "end framing",
+   "value": "zoom x7.000 (d0 8.222 m, d 1.1745 m); frame height 0.4963 of the canvas (spec 0.49 +- 0.02); square to canvas, f/11; uv rect (0.1924, 0.3889)-(0.7796, 0.8851); centre (0.486, 0.637) = storyboard + (0, +0.004); 0.1635 px/texel = 6.1 texels/px",
+   "pass": true
+  },
+  {
+   "check": "parasol tip / girl's feet margins (>= 3 %)",
+   "value": "end framing 5.47 % / 5.61 %; at the one-frame push peak (f136, x7.42) 2.81 % / 2.96 % (inside; the rule is for the end framing)",
+   "pass": true
+  },
+  {
+   "check": "timing",
+   "value": "push starts f31 (film 631); end framing first reached f127.6; peak f136.05 on the film-736 beat (+5.97 % scale); rest f149; static f150-180",
+   "pass": true
+  },
+  {
+   "check": "no orb / dot-pop / bloom",
+   "value": "removed; no compositor; the only emitter is v1's lamp bulb inside its shade (part of the f1-30 set, off-frame from ~f55)",
+   "pass": true
+  },
+  {
+   "check": "composition (f180 look)",
+   "value": "the woman with the orange parasol is centred, the girl in white just left, full figures; parasol tip ~30 px below the top and feet ~35 px above the bottom (preview, 540 px); dots read as a crisp stipple at final 1:1",
+   "pass": true
+  },
+  {
+   "check": "push look f66 / f112 (preview, full res) + final f70/f95/f136",
+   "value": "f66: wall/chair motion-blurred, painting slightly soft from zoom blur (22 px/f, shutter 0.35), no fireflies or blotches; f112: radial blur on the outer figures, centre sharp, no swimming; final frames clean",
+   "pass": true
+  },
+  {
+   "check": "final cost (cap 0.45 GPU-h)",
+   "value": "clean per-frame times 6.4-8.6 s (mean 7.11 s/f over f1-180), first frame of a process +25 s, startup 12.6 s; 180 frames: 0.366 GPU-h in 1 job, 0.387 in the queue's 3 jobs, 0.398 in 4; overscan still +0.016",
+   "pass": true
+  },
+  {
+   "check": "GPU 6 sharing during the cost probes (nvidia-smi every 0.5 s)",
+   "value": "16:40-16:44: probe 1 clean for every measured frame (one unknown PID appeared briefly in the warm-up frame window, which is excluded anyway); probe 2: f85 and f110 shared with PID 399760 (~4 GB), excluded; GPU 6 idle before and after the overscan test; GPU 7 was running another job",
+   "pass": true
+  },
+  {
+   "check": "interface with scripts/render_finals.py --film v2",
+   "value": "dry run: `-- --mode final --frames 1-178:3 | 2-179:3 | 3-180:3` and `-- --mode final --frames 180 --overscan`; script writes renders/final/s04_subject/overscan.png 2544x2204 (verified with --out), never touches f_0180.png or the meta in overscan mode; the queue now reads cost_final.measured_final_s_per_frame = 7.11 (plan 0.414 GPU-h incl. its 70 s/job allowance)",
+   "pass": true
+  },
+  {
+   "check": "meta completeness",
+   "value": "per_frame dist_m / zoom / px_per_texel (180 each); events; zoom_end 7.0; end_framing (uv_rect, margins, push_peak); overscan geometry (res, crop offsets, sensor 47.7 mm, hex, uv_rect, mirror); cost_final; diagnostics; rebuilt in final mode (texture 20000 px)",
+   "pass": true
+  },
+  {
+   "check": "overscan preview (1272x1102, generated band) vs preview f180",
+   "value": "crop (156,281): mean 0.784/255 after 1 px blur, p99 3.06, p99.9 4.38, max 9.0; shift (-0.003, -0.001) px; unchanged from the mirror version (0.783 / 3.06). Rows that changed vs the mirror still: 0-214 only (above v ~0.94); the crop is rows 281-820",
+   "pass": true
+  },
+  {
+   "check": "overscan top band look (lead follow-up)",
+   "value": "renders/work/s04_subject/ovs_top_v2.png at 1:1: continuous pointillist canopy with soft light/dark masses; no mirrored or duplicated trunks, branches, hats or figures; the painted red/blue border is covered; no seam line. The canopy masses continue across the old painting edge, and trunks dissolve into foliage at slightly different heights",
+   "pass": true
+  },
+  {
+   "check": "band statistics vs the canopy (20000 px, Lab std per scale)",
+   "value": "band vs canopy (canopy incl. trunks): <2 px 7.8/7.7, 2-8 px 4.5/4.4, 8-32 px 3.1/3.8, 32-128 px 2.9/3.1, 128-512 px 3.6/4.6 (L); mean L 44.8/44.2; painting rows below v 0.941 byte-identical to each resolution's JPEG",
+   "pass": true
+  },
+  {
+   "check": "f_0001-0180 unchanged by the overscan change",
+   "value": "the band is loaded only under --overscan; preview f180 re-rendered with the new script vs the shipped f_0180: mean 0.047/255, max 6/255 (GPU run-to-run noise, as before)",
+   "pass": true
+  },
+  {
+   "check": "overscan final interface (no final render, per the lead)",
+   "value": "`-- --mode final --frames 180 --overscan --no-render` builds: original 20000 JPEG + band 20000x3135 (EXTEND, Linear, sRGB) through a Mix into Base Color, 2544x2204, frame/lip hidden, meta untouched; render_finals --film v2 dry run plans the same call. Earlier final test (mirror version): crop mean 0.61/255, p99 2.56, 57 s wall; the crop region shades identically with the band",
+   "pass": true
+  },
+  {
+   "check": "hex tile library refreshed",
+   "value": "make_hex_tiles.py --only c_painting: renders/hex_tiles/c_painting/still.png 2544x2204 16-bit from the new preview overscan (Lanczos x2), 18/18 tiles on disk",
+   "pass": true
+  },
+  {
+   "check": "band generator deterministic",
+   "value": "second run of scripts/make_seurat_ext.py (seed 7): all three PNGs md5-identical; ~2 min CPU",
+   "pass": true
+  }
+ ],
+ "cost_final_gpu_h": 0.387,
+ "deviations": [
+  "SETTLE overshoot is +6 % in image scale (x7.42 -> x7.00, 2.9 % of the log move); 6 % of the log move would be +12 % in scale and cut the parasol tip.",
+  "SETTLE shaped in closed form (ease_in_out_sine forward lobe + sin^2 return lobe) instead of D.spring, so the move ends exactly at f149 and f150-180 are static.",
+  "Subject centre moved by (0, +0.004) uv from the storyboard (0.486, 0.633) after the f180 framing test (allowed <= 0.02).",
+  "At the one-frame push peak the parasol-tip margin is 2.8 % (the >= 3 % rule holds at the end framing: 5.5 % / 5.6 %).",
+  "'No emission anywhere' vs 'f1-30 bit-for-bit': v1's lamp bulb (emissive, inside the translucent shade) is kept, because it is part of the f1-30 set; it is off-frame from ~f55.",
+  "Focus hands off from v1's dot depth to the subject over f30-46 (sub-pixel; f1-30 keep v1's focus exactly).",
+  "Overscan extension: a generated foliage band (scripts/make_seurat_ext.py) instead of the storyboard's MIRROR texture extension. Any mirror repeats the trunks as chevrons. The band is written separately rather than as a full painting+band image, so the original JPEG (Blender's own decode) is used for v <= 0.9365 and the painting inside the f180 frame is untouched. The feather is wider than the suggested 1-2 %: patches cover the painting from v 0.945-0.960 to full at v 0.971-0.9795, ~1.5-3.5 % varying along u, so the trunks do not all end on one line. The hex top is 14.3 % of the canvas height above the painting (storyboard ~13 %)."
+ ],
+ "open_issues": [
+  "render_finals.py --film v2 interleaves s04_subject over 3 processes (1-178:3, ...), so consecutive hold frames come from different processes. They are identical only up to GPU run-to-run noise (mean ~0.04/255, sparse max ~5/255). That is far inside qa_finals' 0.5/255 rule, but not bit-identical. Rendering f150-180 in one job (or copying f150) would make the hold bit-identical. That is the post-tools builder's file.",
+  "The final overscan needs assets/paintings/derived/seurat_grande_jatte_20000_topband.png (now on disk; regenerate with tools/venv/bin/python -I scripts/make_seurat_ext.py, ~2 min CPU, ~20 GB RAM). docs/shots_v2.json asset_deps does not list it (not my file). The script stops with that hint if the band is missing.",
+  "scripts/make_hex_tiles.py's painting placeholder (used only when no overscan.png exists) reads overscan.texture_extension.mirror_above_v. That key is gone, so the placeholder falls back to a plain mirror at v 1.0. It could read the band PNG instead (hex-tiles builder's file). The real still is correct.",
+  "renders/final/s04_subject/overscan.png does not exist yet (rendered by the finals queue; not rendered here, per the lead)."
+ ],
+ "notes_for_critic": "Look at renders/review/s04_subject_sheet.png, then at preview f136 (push peak) and f180 (hold = finale f1). The settle reads as a soft landing over f132-149: the push passes x7.0 at f127.6, peaks at x7.42 on the beat and eases back. The frame-diff 'dip' at f135-137 in qa_preview.json is the designed reversal, not a hitch. The f76-82 dip in the optical-flow p90 is the textureless lemon wall filling the frame; the analytic wall-plane flow is one smooth lobe. The f1-30 identity is proved two ways: the camera keys from both scripts are bit-identical, and the pixel differences equal those between two renders of the v1 script itself (GPU noise). The cost numbers come only from frames rendered while GPU 6 ran no other process. If you want >= 3 % margins even at the peak frame, set OVER = 0.0355 (+5.5 % overshoot; needs a preview re-render of f32-148). If the overscan chevrons read in the finale's first second, see open_issues[0]. Script edits in this session were docstring and meta only (no render input changed), so the preview frames from 16:13-16:18 are current. Overscan follow-up: compare renders/work/s04_subject/ovs_top_before_after.png. The band is synthesised from the canopy's own brushwork: elliptical patches 12-34 texels across, foliage-only, colour-matched to soft masses. Near the old painting edge the masses are the painting's own foliage low-pass, reflected (trunks masked out), so nothing at a recognisable scale is mirrored. At 1:1 on the 20000 scan the transition into the band is not visible."
+}

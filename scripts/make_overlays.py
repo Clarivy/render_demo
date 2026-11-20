@@ -34,6 +34,18 @@ Deviations (Lead decision 3, visual tuning only):
   * Caption separators "·" are ink at 45%; chip words ("frame", "tilt", "texel / px") are ink at 62%.
   * No project font has θ, so it is built from Nunito Black "0" plus a crossbar of the font's stroke weight.
   * The slug (off by default) is white at 60% over the S01 night phase and cross-fades to ink by f121.
+
+Film v2 (docs/storyboard_v2.md section 6): --film v2 (default v1: everything above, unchanged)
+  tools/venv/bin/python -I scripts/make_overlays.py --film v2              # renders/overlays_v2/o_0001..o_0960.png
+  table docs/shots_v2.json (960 frames). S01-S03 elements are exactly v1's (same frames, same meta).
+  616-775  pill "High-res textures" (lemon), window end 776: popped out on f776, so 776-780 are clean (the
+           cut-safety check needs 779-780)
+  631-775  chip "×1.0 .. ×7.0" live from renders/meta/s04_subject.json per-frame `zoom` (d0/d of the new push);
+           no "≈1 texel / px" chip in v2
+  781-960  nothing (the finale has no overlays; asserted by the self-test)
+  If renders/meta/s04_subject.json (or its `zoom` column) is missing, the chip uses the documented fallback
+  zoom(f) = 7.0 ** ease_in_out_sine((f - 31) / (145 - 31)) on local frames (×1.0 until f31, ×7.0 from f145:
+  storyboard_v2 section 2 timing, push from f31, arrival ≈ f135-150, static f150-180, end ≈ ×7) and says so.
 """
 import argparse
 import json
@@ -96,8 +108,31 @@ S01_DOT_SPLIT = 61                    # white dot -> coral (61), lime (63), blue
 S01_TILT_FROM = 226
 S03_SLOW = (451, 510)                 # "0.2× · frame N" on these film frames, "1×" around them
 S04_TEXEL_FROM = 706
+S04_ID = "s04_every_dot"              # the shot whose meta drives the zoom chip
 POP_N, OUT_N, WIDTH_N = 8, 5, 8
 SHEET_FRAMES = [25, 61, 100, 125, 140, 196, 230, 260, 300, 440, 451, 480, 515, 620, 650, 710, 760]
+FILM = "v1"
+
+# ---- film v2 (storyboard_v2 section 6): S01-S03 exactly as v1, the new S04 window, nothing in the finale --------
+PILLS_V2 = PILLS[:4] + [dict(id="s04", text="High-res textures", dot="lemon", start=616, end=776)]
+CHIPS_V2 = dict(CHIPS, s04=dict(kind="zoom", start=631, end=776))
+SHEET_FRAMES_V2 = [25, 61, 125, 196, 230, 300, 451, 515, 620, 640, 680, 720, 750, 772, 776, 779, 781, 900]
+FILMS = {
+    "v1": dict(table=SHOTS_JSON, frames=900, out=OUT_DIR, pills=PILLS, chips=CHIPS, s04=S04_ID,
+               texel_from=S04_TEXEL_FROM, sheet=SHEET_FRAMES),
+    "v2": dict(table=os.path.join(ROOT, "docs", "shots_v2.json"), frames=960,
+               out=os.path.join(ROOT, "renders", "overlays_v2"), pills=PILLS_V2, chips=CHIPS_V2, s04="s04_subject",
+               texel_from=None, sheet=SHEET_FRAMES_V2),
+}
+S04V2_ZOOM_END, S04V2_PUSH = 7.0, (31, 145)       # fallback curve only (meta missing)
+
+
+def configure(film):
+    """Select the film: rebinds the module-level timeline/paths (before the Overlay is built or workers fork)."""
+    global FILM, SHOTS_JSON, N_FILM, OUT_DIR, PILLS, CHIPS, S04_ID, S04_TEXEL_FROM, SHEET_FRAMES
+    c = FILMS[film]
+    FILM, SHOTS_JSON, N_FILM, OUT_DIR = film, c["table"], c["frames"], c["out"]
+    PILLS, CHIPS, S04_ID, S04_TEXEL_FROM, SHEET_FRAMES = c["pills"], c["chips"], c["s04"], c["texel_from"], c["sheet"]
 
 
 # =================================================================================================================
@@ -216,10 +251,16 @@ def s04_zoom(fl):
     return S04_D0 / s04_dist(fl)
 
 
+def s04v2_zoom(fl):
+    """v2 fallback (no s04_subject meta yet): ×1.0 -> ×7.0, log-space ease over the storyboard_v2 push window."""
+    return S04V2_ZOOM_END ** ease_in_out_sine(prog(fl, *S04V2_PUSH))
+
+
 FORMULAS = {
     "s01_lights_world": {"theta_deg": s01_theta, "tilt_deg": s01_phi},
     "s03_gummy": {"tau_s": s03_tau, "rate": s03_rate},
     "s04_every_dot": {"dist_m": s04_dist, "zoom": s04_zoom},
+    "s04_subject": {"zoom": s04v2_zoom},
 }
 ALIASES = {
     "theta_deg": ["theta_deg", "theta", "theta_degrees", "env_rot_deg"],
@@ -686,7 +727,9 @@ class Overlay:
         self.chip_font = Font(FONT_CHIP, CHIP_PX * S)
         self.slug_font = Font(FONT_LABEL, SLUG_PX * S)
         self.vals = {k: ShotValues(self.shots[k], self.log)
-                     for k in ("s01_lights_world", "s03_gummy", "s04_every_dot") if k in self.shots}
+                     for k in ("s01_lights_world", "s03_gummy", S04_ID) if k in self.shots}
+        if FILM != "v1":
+            self._report_s04()
         self.pill_cache = {}
         self.strip = Strip()
         tilt = [abs(self.v("s01_lights_world", "tilt_deg", f) or 0.0) for f in range(S01_TILT_FROM, 241)]
@@ -696,6 +739,25 @@ class Overlay:
     def v(self, shot, key, f):
         sv = self.vals.get(shot)
         return sv.get(key, f) if sv else None
+
+    def _report_s04(self):
+        """v2: say where the zoom chip comes from and what it will read (start -> end of its window)."""
+        sv = self.vals.get(S04_ID)
+        c = CHIPS["s04"]
+        if sv is None:
+            self.log.append(f"meta {S04_ID}: shot not in the table; chip uses the fallback curve")
+            return
+        have = any(isinstance(r.get(k), (int, float)) for r in sv.table.values() for k in ALIASES["zoom"])
+        if not have:
+            self.log.append(f"meta {S04_ID}: no per-frame zoom yet -> FALLBACK curve zoom = "
+                            f"{S04V2_ZOOM_END:g} ** ease_in_out_sine(local f{S04V2_PUSH[0]}-{S04V2_PUSH[1]}) "
+                            "(replace by rendering/building shots/s04_subject.py, then rerun)")
+        z0 = sv.get("zoom", c["start"]) or 1.0
+        z1 = max((sv.get("zoom", f) or 1.0) for f in range(c["start"], c["end"]))
+        ze = sv.get("zoom", c["end"] - 1) or 1.0
+        sv.used.clear()
+        self.log.append(f"chip {S04_ID}: f{c['start']} ×{z0:.1f} -> f{c['end'] - 1} ×{ze:.1f} (peak ×{z1:.2f})"
+                        + ("" if 5.0 <= ze <= 9.5 else "  WARNING: storyboard_v2 expects an end zoom of about ×7"))
 
     # ---- chip content ------------------------------------------------------------------------------------------
     def chip_content(self, pid, f):
@@ -716,9 +778,9 @@ class Overlay:
                 return ("text", ((f"{r:g}×", 1.0), (" · ", SEP_ALPHA), ("frame ", WORD_ALPHA), (f"{f}", 1.0))), None
             return ("text", (("1×", 1.0),)), None
         if kind == "zoom":
-            if f >= S04_TEXEL_FROM:
+            if S04_TEXEL_FROM is not None and f >= S04_TEXEL_FROM:
                 return ("text", (("≈1", 1.0), (" texel / px", WORD_ALPHA))), None
-            z = self.v("s04_every_dot", "zoom", f) or 1.0
+            z = self.v(S04_ID, "zoom", f) or 1.0
             zs = f"{z:.1f}" if z < 9.95 else f"{rnd(z)}"
             return ("text", ((f"×{zs}", 1.0),)), None
         raise ValueError(kind)
@@ -1001,6 +1063,36 @@ def selftest(ov):
     for P in PILLS:
         if any(ch.isdigit() for ch in P["text"]):
             errs.append(f"caption with a number: {P['text']}")
+    if FILM != "v1":
+        errs += selftest_v2(ov)
+    return errs
+
+
+def selftest_v2(ov):
+    """storyboard_v2 section 6: S01-S03 windows identical to v1, the S04 window, a clean finale, the fallback."""
+    errs = []
+    v1p = {P["id"]: P for P in FILMS["v1"]["pills"]}
+    for P in PILLS:
+        if P["id"] != "s04" and P != v1p.get(P["id"]):
+            errs.append(f"pill {P['id']} differs from v1")
+    for k, c in CHIPS.items():
+        if k != "s04" and c != FILMS["v1"]["chips"].get(k):
+            errs.append(f"chip {k} differs from v1")
+    s04 = next(P for P in PILLS if P["id"] == "s04")
+    if (s04["start"], s04["end"]) != (616, 776) or S04_TEXEL_FROM is not None:
+        errs.append("S04 v2 window must be 616 -> out by 776, without the texel chip")
+    ends = sorted(int(s["end_frame_in_film"]) for s in ov.shots.values())
+    fin0, fin1 = ends[-2] + 1, ends[-1]
+    if (fin0, fin1, N_FILM) != (781, 960, 960):
+        errs.append(f"v2 table: finale {fin0}-{fin1}, film {N_FILM} (want 781-960, 960)")
+    for f in list(range(fin0 - 4, fin0)) + list(range(fin0, fin1 + 1)):      # 777-780 clean, finale empty
+        if any(presence(f, P["start"], P["end"]) > 0 for P in PILLS) or presence(f, STRIP["start"], STRIP["end"]) > 0:
+            errs.append(f"overlay element visible on f{f} (S04 out by 776, nothing in the finale)")
+            break
+    for name, got, want in (("zoom_v2(31)", s04v2_zoom(31), 1.0), ("zoom_v2(145)", s04v2_zoom(145), 7.0),
+                            ("zoom_v2(180)", s04v2_zoom(180), 7.0)):
+        if abs(got - want) > 0.01:
+            errs.append(f"fallback {name} = {got:.4f}, want {want}")
     return errs
 
 
@@ -1009,15 +1101,18 @@ def selftest(ov):
 OV = None
 
 
-def _init(slug, fallback):
+def _init(slug, fallback, film=None):
     global OV
+    if film is not None and film != FILM:
+        configure(film)
+        OV = None
     if OV is None:
         OV = Overlay(slug=slug, fallback_sprites=fallback)
 
 
 def _render(args):
-    f, out_dir, slug, fallback = args
-    _init(slug, fallback)
+    f, out_dir, slug, fallback = args[:4]
+    _init(slug, fallback, args[4] if len(args) > 4 else None)
     rgba = OV.frame(f).to_rgba8()
     path = os.path.join(out_dir, f"o_{f:04d}.png")
     tmp = path + ".tmp.png"
@@ -1026,7 +1121,8 @@ def _render(args):
     return f, int(rgba[..., 3].max())
 
 
-def parse_frames(spec, lo=1, hi=N_FILM):
+def parse_frames(spec, lo=1, hi=None):
+    hi = N_FILM if hi is None else hi           # the selected film's length (900 v1, 960 v2)
     if not spec:
         return list(range(lo, hi + 1))
     step = 1
@@ -1134,15 +1230,23 @@ def make_sheet(path, frames, out_dir, bg_mode):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("--frames", default=None, help="'1-900', '121-238,451', '1-900:10'. Default: all 900")
-    ap.add_argument("--out", default=OUT_DIR)
+    ap.add_argument("--film", choices=sorted(FILMS), default="v1",
+                    help="v1 (default; docs/shots.json, renders/overlays, 900 f) or v2 (docs/shots_v2.json, "
+                         "renders/overlays_v2, 960 f)")
+    ap.add_argument("--frames", default=None, help="'1-900', '121-238,451', '1-900:10'. Default: the whole film")
+    ap.add_argument("--out", default=None, help="default renders/overlays (v1) or renders/overlays_v2 (v2)")
     ap.add_argument("--slug", action="store_true", help='add "Illustrative · rendered with Cycles" (lower right)')
     ap.add_argument("--jobs", type=int, default=min(24, os.cpu_count() or 4))
     ap.add_argument("--fallback-sprites", action="store_true", help="ignore assets/ui (test the Pillow fallback)")
     ap.add_argument("--sheet", default=None, help="also write a review sheet (e.g. renders/review/overlays_sheet.png)")
-    ap.add_argument("--sheet-frames", default=",".join(map(str, SHEET_FRAMES)))
+    ap.add_argument("--sheet-frames", default=None, help="default: the film's review frames")
     ap.add_argument("--sheet-bg", default="auto", choices=["auto", "grey", "final", "preview"])
     a = ap.parse_args()
+    configure(a.film)
+    a.out = a.out or OUT_DIR
+    a.sheet_frames = a.sheet_frames or ",".join(map(str, SHEET_FRAMES))
+    if a.film != "v1" and os.path.realpath(a.out) == os.path.realpath(FILMS["v1"]["out"]):
+        sys.exit("[overlays] refusing to write v2 overlays into the v1 folder renders/overlays")
 
     t0 = time.time()
     _init(a.slug, a.fallback_sprites)
@@ -1153,12 +1257,13 @@ def main():
         for e in errs:
             print("[overlays] SELFTEST FAIL:", e, file=sys.stderr)
         sys.exit(2)
-    print(f"[overlays] selftest ok (cut safety, formulas, fixed digit cells); tilt chip = ±{OV.tilt_amp}°")
+    print(f"[overlays] selftest ok (cut safety, formulas, fixed digit cells"
+          f"{'; v2 windows, clean finale' if FILM != 'v1' else ''}); tilt chip = ±{OV.tilt_amp}°")
     frames = parse_frames(a.frames)
     sheet_frames = parse_frames(a.sheet_frames) if a.sheet else []
     todo = sorted(set(frames) | set(sheet_frames))
     os.makedirs(a.out, exist_ok=True)
-    jobs = [(f, a.out, a.slug, a.fallback_sprites) for f in todo]
+    jobs = [(f, a.out, a.slug, a.fallback_sprites) + ((FILM,) if FILM != "v1" else ()) for f in todo]
     vis = 0
     if a.jobs > 1 and len(jobs) > 8:
         import multiprocessing as mp

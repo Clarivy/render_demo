@@ -1,0 +1,161 @@
+{
+ "id": "tiles_T2",
+ "status": "done",
+ "summary": "All four T2 tiles are finished: t_desk_lamp, t_lightbulb, t_fruit_sss and t_material_balls. Each has a complete preview of every loop frame plus the seam frame, a contact sheet, a 200 px readability check, and meta with the loop and measured final s/f. Changes in this pass: (1) t_desk_lamp pool and shadows now read strongly. The key light is linked to the lamp and props only, fill and world are lower, and the spot is 140 W with blend 0.12 and a 6 mm radius. (2) t_lightbulb is rebuilt for readability. A Fresnel back-face bug that made the dark olive glass ring is fixed; the glass has a coral edge tint and a white rim band seen only by glossy rays; the bulb is the key light at 80 W with a lavender fill; the framing is tighter and the props sit inside the hex; the preview covers the full 90-frame loop. (3) t_fruit_sss is settled on the deeper coral #FFA08E with the backlight linked to the fruit, backlight 600 W, fill 14 W and final at 96 spp. (4) t_material_balls preview is re-rendered in full from the current script. Final cost was measured on 4 frames per scene in one process with GPU 7 not shared. Total 0.35 GPU-h; every scene is under 0.12.",
+ "files": [
+  "shots/t_desk_lamp.py",
+  "shots/t_lightbulb.py",
+  "shots/t_fruit_sss.py",
+  "shots/t_material_balls.py",
+  "renders/meta/t_desk_lamp.json",
+  "renders/meta/t_lightbulb.json",
+  "renders/meta/t_fruit_sss.json",
+  "renders/meta/t_material_balls.json",
+  "renders/review/t_desk_lamp_sheet.png",
+  "renders/review/t_lightbulb_sheet.png",
+  "renders/review/t_fruit_sss_sheet.png",
+  "renders/review/t_material_balls_sheet.png",
+  "renders/preview/t_desk_lamp/f_0001..f_0181.png (every frame of the 180-loop + seam frame 181)",
+  "renders/preview/t_lightbulb/f_0001..f_0091.png (every frame of the 90-loop + seam frame 91)",
+  "renders/preview/t_fruit_sss/f_0001..f_0181.png",
+  "renders/preview/t_material_balls/f_0001..f_0181.png",
+  "renders/test/t_desk_lamp/f_0001,0046,0091,0136.png (final-mode cost frames)",
+  "renders/test/t_lightbulb/f_0001,0023,0046,0068.png",
+  "renders/test/t_fruit_sss/f_0001,0046,0091,0136.png (96 spp)",
+  "renders/test/t_material_balls/f_0001,0046,0091,0136.png",
+  "renders/work/t_desk_lamp/read200_f0046.png",
+  "renders/work/t_lightbulb/read200_f0023.png",
+  "renders/work/t_fruit_sss/read200_f0046.png",
+  "renders/work/t_material_balls/read200_f0046.png",
+  "renders/work/t_material_balls/read200_honey_T2.png",
+  "docs/reports/tiles_T2_build_v2.json"
+ ],
+ "review_images": [
+  "renders/review/t_desk_lamp_sheet.png",
+  "renders/review/t_lightbulb_sheet.png",
+  "renders/review/t_fruit_sss_sheet.png",
+  "renders/review/t_material_balls_sheet.png",
+  "renders/work/t_material_balls/read200_honey_T2.png",
+  "renders/work/t_desk_lamp/read200_f0046.png",
+  "renders/work/t_lightbulb/read200_f0023.png",
+  "renders/work/t_fruit_sss/read200_f0046.png",
+  "renders/work/t_material_balls/read200_f0046.png",
+  "renders/test/t_desk_lamp/f_0091.png",
+  "renders/test/t_lightbulb/f_0023.png",
+  "renders/test/t_fruit_sss/f_0046.png",
+  "renders/test/t_material_balls/f_0091.png"
+ ],
+ "qa": [
+  {
+   "check": "t_desk_lamp loop seam (preview 8-bit, f181 vs f1)",
+   "value": "mean 0.030/255, p99 1, max 1/255 (dither / GPU nondeterminism level)",
+   "pass": true
+  },
+  {
+   "check": "t_lightbulb loop seam (f91 vs f1)",
+   "value": "mean 0.017/255, p99 1, max 1/255",
+   "pass": true
+  },
+  {
+   "check": "t_fruit_sss loop seam (f181 vs f1)",
+   "value": "mean 0.020/255, p99 1, max 1/255",
+   "pass": true
+  },
+  {
+   "check": "t_material_balls loop seam (f181 vs f1)",
+   "value": "mean 0.029/255, p99 1, max 1/255",
+   "pass": true
+  },
+  {
+   "check": "motion continuity: seam step vs in-loop steps (mean |d| per frame step)",
+   "value": "lamp 0.516 (loop 0.265-0.553); bulb 1.669 (0.077-1.669, pendulum turnarounds are the minima); fruit 1.084 (0.123-1.159); balls 2.592 (2.129-2.605) -> no jump at the seam",
+   "pass": true
+  },
+  {
+   "check": "no long static stretch",
+   "value": "longest run of steps < 0.05/255: 0 frames in all four",
+   "pass": true
+  },
+  {
+   "check": "hero size (fraction of hex/frame height, 4 quarter frames)",
+   "value": "lamp 0.575-0.592; bulb+socket 0.556-0.559 (+ cord to the top edge); fruit+plate 0.581-0.595; balls+platter 0.586-0.602 (target 0.55-0.65)",
+   "pass": true
+  },
+  {
+   "check": "hex safe area (max hex scale of hero/scene geometry, 1.0 = hex edge)",
+   "value": "lamp scene 0.817; bulb 0.918 (socket cap at the top flat edge; the cord exits through it by design); fruit 0.791; balls 0.792",
+   "pass": true
+  },
+  {
+   "check": "200 px readability (230x200 hex-masked + mock honeycomb at 230 and 160 px)",
+   "value": "all four read as one bold hero on their pastel: lamp + bright pool, hanging bulb with glow, kiwi/lime, five spheres",
+   "pass": true
+  },
+  {
+   "check": "desk lamp pool contrast (preview f1, PBR Neutral)",
+   "value": "pool #E6FBD9 (V 0.98) vs desk off-pool #5B9D89 (V 0.62, S 0.42); was #D6F8D7 vs #90D0B9 (V 0.97 vs 0.82); prop shadows inside the pool = the off-pool teal",
+   "pass": true
+  },
+  {
+   "check": "desk lamp no grey (G2)",
+   "value": "off-pool desk H162 S0.42 (teal-mint), wall #A1EDD3 mint, shadows teal",
+   "pass": true
+  },
+  {
+   "check": "lightbulb glass read / no grey",
+   "value": "dark olive ring removed (Fresnel back-face fix); coral edge tint + white glossy-only rim band; bg #F9BAA1 (peach, S 0.35); bulb shadows dusty rose #DDADA2 (S 0.27, tinted)",
+   "pass": true
+  },
+  {
+   "check": "fruit backlight settle (A/B 340/30, 560/30, 600/14, 800/18 W back/fill)",
+   "value": "600/14 chosen: faces lit from inside, lime glows yellow; 800/18 starts to bleach the lime centre; bg stays coral (backlight light-linked)",
+   "pass": true
+  },
+  {
+   "check": "final cost t_desk_lamp (128 spp, 4 frames one process)",
+   "value": "frames 3.4/1.9/1.9/1.9 s, wall 10.5 s -> 1.90 s/f steady, 180 f in 2 chunks = 0.097 GPU-h (cap 0.12)",
+   "pass": true
+  },
+  {
+   "check": "final cost t_lightbulb (128 spp)",
+   "value": "3.5/2.5/2.5/2.4 s, wall 12.4 s -> 2.47 s/f, 90 f = 0.062 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "final cost t_fruit_sss (96 spp; 128 spp measured 2.27 s/f = 0.118 GPU-h)",
+   "value": "2.9/1.7/1.8/1.8 s, wall 14.8 s -> 1.77 s/f, 180 f = 0.093 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "final cost t_material_balls (96 spp)",
+   "value": "3.0/1.9/1.9/1.9 s, wall 11.3 s -> 1.90 s/f, 180 f = 0.097 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "GPU load during cost runs",
+   "value": "nvidia-smi compute-apps on GPU 7 (bus CA:00.0): only the measuring Blender process in every run; GPU 7 util 98-100% while rendering, 0% between; GPU 6 busy with other builders (does not share GPU 7)",
+   "pass": true
+  },
+  {
+   "check": "meta files",
+   "value": "renders/meta/<id>.json: frames, loop (180/90/180/180), res [1152,998], bg, hero, phenomenon, measured_final_s_per_f, final_cost, framing metrics (regenerated by a default --no-render run)",
+   "pass": true
+  }
+ ],
+ "cost_final_gpu_h": 0.349,
+ "deviations": [
+  "t_desk_lamp: the desk off the pool is now a deeper teal-mint (#5B9D89, V 0.62) rather than a pale pastel, so that the lamp pool reads; the mint wall is the pastel background (#A1EDD3). Deliberate trade against G2's 'every ground reads as its pastel'.",
+  "t_desk_lamp: the lamp itself is left of centre (hero bbox centre x 456-465 of 1152); the lamp + pool + props composition is centred (scene centre x 578-616). This is the predecessor's diagonal layout, kept.",
+  "t_lightbulb: the glass gets a stylised coral edge tint and a glossy-only white rim band (not physical) so the clear envelope reads against the pale peach wall.",
+  "t_lightbulb: the socket cap reaches hex scale 0.918, past the 0.9 inner safe line but inside the hexagon. The cord leaves through the top flat edge by design.",
+  "t_fruit_sss: the final is 96 spp, not 128. 128 measured 0.118 GPU-h, under 2 % below the 0.12 cap. 96 vs 128 differs by a mean of 0.8/255 (denoiser texture level) with no visible artifact in a 1:1 crop.",
+  "Previews cover every loop frame instead of a stride, because a preview frame costs about 0.6-1.5 s on the H200. This lets make_hex_tiles use real preview content for all four tiles now."
+ ],
+ "open_issues": [
+  "make_hex_tiles.py was not re-run, because renders/hex_tiles is not mine. Run `tools/venv/bin/python -I scripts/make_hex_tiles.py --only t_desk_lamp,t_lightbulb,t_fruit_sss,t_material_balls` to pick up the new complete previews; the finals queue will replace them with finals.",
+  "Finals are not rendered, as briefed. The finals queue reads measured_final_s_per_f from the metas: 1.90, 2.47, 1.77 and 1.90 s/f.",
+  "t_lightbulb: G1 bloom uses the S01 parameters on the Emit pass. On this small filament plus halo it adds only a faint glow, so most of the glow comes from the light-marker halo (TLB_GLOW 4). Not tuned further, to keep G1 identical.",
+  "The cost figures are for an exclusive H200. If a finals job shares GPU 7 with another process, expect it to take proportionally longer."
+ ],
+ "notes_for_critic": "Look at the four sheets and read200_honey_T2.png, which mocks the four tiles at 230 px on the lavender wall. Desk lamp: the earlier look lit the desk with the soft key, so the pool was cream on pale mint (V 0.97 vs 0.82) and the shadows were filled in. Now the key reaches only the lamp and props: the pool is a crisp warm disc, the prop shadows are teal holes in it, and the pool travels an ellipse over the props once per 180-frame loop. Lightbulb: the predecessor's dark olive rim was a Cycles Fresnel-node quirk (the IOR is inverted on back faces, giving total internal reflection on a single shell). With that fixed the glass became invisible, so a thin coral edge tint and a white rim band seen only by glossy rays give the pear outline. A lavender fill tints the swinging hard shadows. Fruit: the backlight is light-linked to the fruit and plate (no white band on the floor). The 600 W back / 14 W fill A/B makes the faces glow from inside. All loops are seamless to 8-bit dither; the 16-bit GPU nondeterminism of 0.76/255 noted by the predecessor is the same order. Cost timings: GPU 7 had no other process during the measurements (nvidia-smi compute-apps logged), so these numbers replace the earlier contaminated ones."
+}

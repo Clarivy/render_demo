@@ -1,0 +1,170 @@
+{
+ "id": "tiles_T1",
+ "status": "done",
+ "summary": "All four T1 mini scenes are finished: t_chrome_cow (180 f loop), t_glass_armadillo, t_disco and t_magnifier (90 f loops). Each scene has a complete preview loop, a clean loop seam, a meta file with its loop length and measured s/f, a 200 px readability check and a contact sheet. t_disco: the half-disc flecks were the ball shadowing its own fleck lights. The lights sit at the image of the spot behind each tile, and the script's cycles.cast_shadow line does not exist in 4.5 (it raises an AttributeError). Light.use_shadow=False fixes it, and the flecks are now clean round spots sweeping a mid-lilac cove. A second bug broke the loop seam (per-light constant cone size); the cone size is now baked per frame and the seam is 0.034/255. t_magnifier was built new: the Poly Haven magnifying_glass_01 frame, re-skinned in candy colours, with a procedural crown-glass lens. It glides over a pink quatrefoil-jacquard swatch in a white candy embroidery hoop on the sky cove. The lens magnifies the weave about x2 (measured x1.87-2.00). Final cost was measured on a quiet GPU 6 (no other process during any cost run): 1.93 / 2.41 / 3.51 / 2.61 s/f, 0.31 GPU-h for all four finals. Every scene is at or under 0.097 GPU-h; the cap is 0.12.",
+ "files": [
+  "shots/t_chrome_cow.py",
+  "shots/t_glass_armadillo.py",
+  "shots/t_disco.py",
+  "shots/t_magnifier.py",
+  "renders/meta/t_chrome_cow.json",
+  "renders/meta/t_glass_armadillo.json",
+  "renders/meta/t_disco.json",
+  "renders/meta/t_magnifier.json",
+  "renders/preview/t_chrome_cow/ (f_0001-0181, full loop + seam frame)",
+  "renders/preview/t_glass_armadillo/ (f_0001-0091)",
+  "renders/preview/t_disco/ (f_0001-0091)",
+  "renders/preview/t_magnifier/ (f_0001-0091)",
+  "renders/review/t_chrome_cow_sheet.png",
+  "renders/review/t_glass_armadillo_sheet.png",
+  "renders/review/t_disco_sheet.png",
+  "renders/review/t_magnifier_sheet.png",
+  "renders/work/<id>/tiny200.png (200 px readability mocks, 4 files)",
+  "renders/work/<id>/qa_mask/ (hero silhouettes for the framing numbers)",
+  "renders/test/<id>/cost/ (final-mode cost frames: 1152x998 16-bit, 8 per scene)",
+  "docs/reports/tiles_T1_build_v2.json"
+ ],
+ "review_images": [
+  "renders/review/t_chrome_cow_sheet.png",
+  "renders/review/t_glass_armadillo_sheet.png",
+  "renders/review/t_disco_sheet.png",
+  "renders/review/t_magnifier_sheet.png",
+  "renders/work/t_chrome_cow/tiny200.png",
+  "renders/work/t_glass_armadillo/tiny200.png",
+  "renders/work/t_disco/tiny200.png",
+  "renders/work/t_magnifier/tiny200.png",
+  "renders/test/t_disco/cost/f_0001.png",
+  "renders/test/t_disco/cost/f_0023.png",
+  "renders/test/t_magnifier/cost/f_0046.png",
+  "renders/test/t_magnifier/cost/f_0023.png",
+  "renders/test/t_chrome_cow/cost/f_0068.png",
+  "renders/test/t_glass_armadillo/cost/f_0034.png"
+ ],
+ "qa": [
+  {
+   "check": "t_chrome_cow framing (T_MASK silhouette, preview f1/46/91/136)",
+   "value": "hero (cow+turntable) 57.9-59.9 % of hex height, 45.8 % of width, centre (0.499, 0.52-0.53); 0 px outside the 0.94 hex",
+   "pass": true
+  },
+  {
+   "check": "t_glass_armadillo framing (f1/23/46/68)",
+   "value": "hero 62.1-63.1 % of hex height, 55.6 % of width, centre (0.499, 0.515-0.520); 0 px outside the 0.94 hex",
+   "pass": true
+  },
+  {
+   "check": "t_disco framing (f1/23/46/68)",
+   "value": "ball + caps + collar 57.5 % of hex height, 42 % of width, centre y 0.449; only the gold hanger rod leaves the hex (exits the top edge by design, 140 px)",
+   "pass": true
+  },
+  {
+   "check": "t_magnifier framing (f1/23/46/68)",
+   "value": "magnifier 63.1-64.9 % of hex height, 44-46 % of width, centre x 0.44-0.55 as it glides; hoop + glass union inside the hex; 0 px outside the 0.94 hex",
+   "pass": true
+  },
+  {
+   "check": "loop seam t_chrome_cow (preview f181 vs f1)",
+   "value": "mean |d| 0.031/255, p99 1, max 22 (4 after 1 px blur); adjacent frames for scale: 1.14/255",
+   "pass": true
+  },
+  {
+   "check": "loop seam t_glass_armadillo (preview f91 vs f1)",
+   "value": "mean |d| 0.033/255, p99 1, max 1",
+   "pass": true
+  },
+  {
+   "check": "loop seam t_disco (preview f91 vs f1)",
+   "value": "mean |d| 0.034/255, p99 1, max 6 (before the per-frame cone fix: 1.45/255, p99 37)",
+   "pass": true
+  },
+  {
+   "check": "loop seam t_magnifier (preview f91 vs f1)",
+   "value": "mean |d| 0.029/255, p99 1, max 1",
+   "pass": true
+  },
+  {
+   "check": "loop continuity (full preview loops, adjacent mean |d| and the wrap step)",
+   "value": "cow median 1.14 / wrap 1.11; armadillo 1.34 / 1.64; disco 8.62 / 8.80 (moving flecks); magnifier 1.02 / 1.16. No jumps; the wrap step is in the normal range",
+   "pass": true
+  },
+  {
+   "check": "200 px readability (230x200 hex mock on a lavender wall)",
+   "value": "all four read at a glance: chrome cow on a pink turntable; aqua glass armadillo + caustic pool; disco ball + round flecks; magnifier icon with visibly bigger quatrefoils inside the lens (renders/work/<id>/tiny200.png)",
+   "pass": true
+  },
+  {
+   "check": "t_disco flecks are clean round spots",
+   "value": "fixed: Light.use_shadow=False on the 448 image-source fleck spots (half-discs = the ball's silhouette seen from each image source); at final 256 spp the spots are round and crisp, 60-70 px, with coloured flecks from the candy tiles",
+   "pass": true
+  },
+  {
+   "check": "t_magnifier magnification",
+   "value": "x1.87-2.00 (quatrefoil pitch inside vs outside the lens, FFT peak on final frames 1, 23, 46, 68)",
+   "pass": true
+  },
+  {
+   "check": "no grey (final f1, hex area: S<0.08 & V<0.8)",
+   "value": "cow 0.0 %, armadillo 0.1 %, disco 0.0 %, magnifier 0.0 %. Mean hex sRGB: cow (241,196,220), armadillo (222,227,184), disco (128,106,189), magnifier (229,211,229)",
+   "pass": true
+  },
+  {
+   "check": "colour pipeline",
+   "value": "Khronos PBR Neutral, look None; exposure -0.2 (cow, armadillo, disco), -0.35 (magnifier, inside the -0.2 +- 0.3 band); static seed; D.bake / baked LINEAR keys one frame past both loop ends",
+   "pass": true
+  },
+  {
+   "check": "cost t_chrome_cow (final, GPU 6)",
+   "value": "1.929 s/f steady (frames [1, 2, 23, 46, 68, 91, 113, 135], per-frame [4.7, 1.9, 2.0, 1.9, 1.9, 1.9, 2.0, 1.9], first frame of the process 4.7 s); foreign GPU-6 processes in 0/19 nvidia-smi samples; GPU-6 util mean 67.5 % (incl. startup) -> 180 f = 0.0965 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "cost t_glass_armadillo (final, GPU 6)",
+   "value": "2.414 s/f steady (frames [1, 2, 12, 23, 34, 46, 57, 68], per-frame [3.3, 2.4, 2.5, 2.4, 2.4, 2.4, 2.4, 2.4], first frame of the process 3.3 s); foreign GPU-6 processes in 0/20 nvidia-smi samples; GPU-6 util mean 74.2 % (incl. startup) -> 90 f = 0.0603 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "cost t_disco (final, GPU 6)",
+   "value": "3.514 s/f steady (frames [1, 2, 12, 23, 34, 46, 57, 68], per-frame [4.4, 3.5, 3.5, 3.5, 3.6, 3.5, 3.5, 3.5], first frame of the process 4.4 s); foreign GPU-6 processes in 0/29 nvidia-smi samples; GPU-6 util mean 80.3 % (incl. startup) -> 90 f = 0.0877 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "cost t_magnifier (final, GPU 6)",
+   "value": "2.614 s/f steady (frames [1, 2, 12, 23, 34, 46, 57, 68], per-frame [4.5, 2.6, 2.6, 2.7, 2.6, 2.6, 2.6, 2.6], first frame of the process 4.5 s); foreign GPU-6 processes in 0/22 nvidia-smi samples; GPU-6 util mean 71.5 % (incl. startup) -> 90 f = 0.0652 GPU-h",
+   "pass": true
+  },
+  {
+   "check": "cost cap <= 0.12 GPU-h per scene",
+   "value": "max 0.096 (cow); total 0.31 GPU-h for all T1 finals (+ ~1-3 s first-frame overhead per finals chunk)",
+   "pass": true
+  },
+  {
+   "check": "GPU contention during the cost measurements",
+   "value": "none: each cost run was one Blender process rendering 8 final frames while nvidia-smi was polled every 0.5 s. No other process appeared on GPU 6 (GPU-fec5a597) in any sample (19-29 samples per run). Other builders' jobs were on GPU 7 at the time. The predecessor's contaminated numbers were replaced (cow 1.9 -> 1.93, armadillo 2.5 -> 2.41 s/f)",
+   "pass": true
+  },
+  {
+   "check": "meta files",
+   "value": "renders/meta/<id>.json for all four: frames, loop (180/90/90/90), res [1152,998], bg, hero, phenomenon, palette, motion, final spp/threshold, measured_final_s_per_frame, est_final_gpu_h, measurement note (magnifier also has lens optics + measured magnification)",
+   "pass": true
+  }
+ ],
+ "cost_final_gpu_h": 0.31,
+ "deviations": [
+  "t_disco: flecks are 448 baked image-source virtual spot lights (one per mirror tile, light-linked to the cove, no shadow rays, invisible to glossy). This is geometric optics, not brute-force path tracing, which only gives firefly speckle for flecks. The ball, its glints, the reflections and the ambient light are ordinary path tracing.",
+  "t_disco: artistic fleck gain x5 and cone x1.5 so the flecks read at tile size. The cove is a mid lilac-violet (mean sRGB ~(130,107,190)), darker than the pastel lilac swatch #C3A6FF; flecks would vanish on a full-pastel wall. Lemon and orange candy tiles were dropped (they mirrored the room as brown).",
+  "t_magnifier: the asset's low-poly lens (facet ripples, f ~ 0.38 m) is replaced by a procedural biconvex crown-glass lens with analytic normals (R 0.25 m, f 0.253 m). The asset's rim, ferrule and handle geometry are used as is; its worn black textures are replaced by candy materials (lemon rim, violet handle, gold ferrule).",
+  "t_magnifier: the lens casts no shadow rays (no caustic focus spot or dark ring), so the magnified weave stays clean and noise-free. The rim and handle cast normal soft shadows.",
+  "t_magnifier: the crimson tone-on-tone jacquard is recoloured to candy pink. Its displacement map drives a deep-to-light pink ramp and the diffuse adds thread detail. An embroidery hoop was added as the stage. Exposure is -0.35.",
+  "t_glass_armadillo (predecessor, kept): Filter Glossy 0.2 and glass IOR 1.3 so the refractive caustic converges at 384 spp. The cove is invisible to glossy and transmission rays.",
+  "t_chrome_cow (predecessor, kept): the cove is invisible to glossy rays and glossy rays see a violet ground, which gives the chrome a crisp silhouette. The loop is 180 frames (one turn at 2 deg/f).",
+  "Full preview loops were rendered for all four scenes (beyond the stride + seam the brief asks for, about 5 GPU-min) so the hex-tile library can use real preview content instead of placeholders."
+ ],
+ "open_issues": [
+  "renders/hex_tiles/manifest.json still lists the four T1 tiles as placeholders (built before the T1 previews were complete). The hex-tile owner or the lead needs to re-run tools/venv/bin/python -I scripts/make_hex_tiles.py --only t_chrome_cow,t_glass_armadillo,t_disco,t_magnifier to pick up the complete preview loops. I did not run it because it is not my file.",
+  "t_disco: Cycles does not motion-blur lights, so the flecks move about 10 px/f at final without blur (about 1.7 px/f at 200 px tile size). The preview sequence looks smooth with no visible strobing, but nobody has watched it as a movie yet.",
+  "t_disco: at preview quality (128 spp, half res) the fleck edges are slightly lumpy from the denoiser; at final 256 spp they are clean.",
+  "t_magnifier: a mild oblique-aberration swirl remains near the lower rim of the lens in some frames. It is physical, visible only at full resolution, and was reduced by tilting the lens 22 deg toward the camera.",
+  "Cost is measured on 8 frames per scene in one process (steady mean of frames 2-8), not on the whole loop. Spread across sampled frames was +-0.1 s.",
+  "The predecessor's renders/test/t_disco/final (half-disc bug) was moved to renders/work/t_disco/STALE_prefix_halfdisc_test_final so nobody mistakes it for current output."
+ ],
+ "notes_for_critic": "t_disco: two real bugs were fixed. (1) Half-disc flecks: each fleck light sits at the mirror image of the spot behind its tile, so with shadow rays on, the ball occludes the beam. Grazing rim tiles (the ones whose beams reach the back wall) lost exactly half the cone, cut along the ball's silhouette. That line was the predecessor's straight edge. The script set cycles.cast_shadow, which no longer exists in 4.5 and raises an AttributeError; Light.use_shadow=False fixes it. With shadows off nothing spurious is lit: a cone can only light the convex cove from inside, beyond its tile, and where it crosses from outside it meets the back face. (2) Loop seam: the cone angle was a per-light constant (the average distance over the loop), but a different light holds each tile position at f91 than at f1, so the fleck sizes jumped at the seam (1.45/255). The cone is now baked per frame and the seam is 0.034/255. Look at renders/test/t_disco/cost/*.png (final quality) rather than the previews for fleck edge quality. Stills one tile column apart (11.25 f) look alike apart from the coloured flecks; the sweep is continuous in motion. t_magnifier: please judge the magnification on renders/test/t_magnifier/cost/f_0046.png: the quatrefoils are twice the pitch inside the lens as outside. The swatch-in-a-hoop staging keeps the sky background visible around the hero. t_chrome_cow and t_glass_armadillo were not re-rendered; only their measured s/f constants and docstring cost lines were updated (uncontended re-measure). Their sheets and previews are unchanged apart from the filled-in preview frames, rendered from the same scripts."
+}

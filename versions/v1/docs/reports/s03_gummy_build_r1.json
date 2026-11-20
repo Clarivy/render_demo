@@ -1,0 +1,64 @@
+{
+ "id": "s03_gummy",
+ "status": "ready_with_issues",
+ "script": "/home/qzhao/render_demo/shots/s03_gummy.py",
+ "preview_dir": "/home/qzhao/render_demo/renders/preview/s03_gummy",
+ "preview_frames_complete": true,
+ "review_sheet": "/home/qzhao/render_demo/renders/review/s03_gummy_sheet.png",
+ "final_s_per_frame": 30.8,
+ "final_test_frames": [
+  "/home/qzhao/render_demo/renders/test/s03_gummy/f_0001.png",
+  "/home/qzhao/render_demo/renders/test/s03_gummy/f_0038.png",
+  "/home/qzhao/render_demo/renders/test/s03_gummy/f_0106.png"
+ ],
+ "final_timing_note": "Final mode, 384 spp / threshold 0.008: f1 22.3 s, f38 34.8 s, f106 35.3 s (mean 30.8 s) while GPU 6 was shared with another builder (nvidia-smi showed a 46 GB foreign process). Cost model from idle-GPU runs: ~10 s fixed per frame (scene/lattice/deformation-blur sync, OIDN) + ~0.045 s/spp at 1080p -> ~27 s/f at 384 spp on an idle H200 (~1.35 GPU-h for 180 f). 512 spp (storyboard) measured 30-40 s/f (~1.65-1.85 GPU-h); 256 spp measured 18-21 s/f (~1.0 GPU-h, on budget). Adaptive threshold, fewer transmission bounces and filter_glossy gave no speedup. Use S03_FSPP=256 if the budget is tight; the quality difference is marginal (see measurements).",
+ "iterations": 9,
+ "measurements": [
+  "Circle match f1 (final res, ball-only matte pass): 1535.6 px wide through the centre row with motion blur (1536.5 px without), centred at x=959.5 (frame centre 959.5); camera 0.6143 m from the ball centre (exact lens*tan(asin(r/d)) solve; storyboard's 0.59 m would give ~1605 px).",
+  "Static-region QA, consecutive 8-bit preview frames f31-60, mean |diff| (0-255): stripes 0.258 (max 0.289), blocks 0.367 (max 0.425), coral wall 0.114 (max 0.142) -> all < 1/255. Rest window f126-170: 0.099 mean. Over f16-170 the only larger values (f22-25, max 6.0) are the falling gummy's real shadow sweeping the coral wall/blocks, not flicker.",
+  "Camera + target keys bit-identical over f16-170 (verified in Blender); pull-out reaches the lock exactly at f15 with zero velocity (~1.7% log-distance SETTLE overshoot around f12).",
+  "Whip: yaw 92.862 -> 37.862 deg (exactly -55.000) at f180, ease_in_cubic, analytic 16.5 deg/f at the cut (f180->181 continuation 16.50 deg/f); shutter 0.500 (f171) -> 0.667 (f172) -> 1.000 (f174..180).",
+  "Determinism: re-rendered preview f30/f60/f100/f150 differ from stored frames by max 1 level (mean 0.03).",
+  "Ball/gummy geometry (solved on the evaluated f106 mesh): contact B=(-0.465, 0.118), on the left flank at z 0.22, normal n_h=(0.925, 0.38); feet clearance before bonk 4.6 cm (>= 3 cm); min ball-gummy clearance over f1-180 excluding the contact frame 8.5 mm (f105); ball in 0.557 m/s, out 0.449 m/s (restitution 0.8), stops exactly at f150 at (-0.695, -0.045).",
+  "Squash volume within ~1% of rest at full squash (height 0.55, rings 1.15/1.40/1.35/1.10); max squash f38, lift-off f48, second landing f96, bonk f106 (all on the storyboard grid; tau(31)=0.92, tau(85)=1.28, tau(91)=1.40, tau(96)=1.5667, tau(106)=1.90).",
+  "Gummy mesh: 1 leftover 22-edge hole fan-filled -> 0 boundary / 0 non-manifold edges; no specks/streaks at f38 max squash in final-quality render.",
+  "Denoised noise proxy (same frame f40, seed 0 vs seed 1, gummy region mean |diff|): 256 spp 1.86 (p99 12.7), 512 spp 1.57 (p99 9.7); gummy roughness 0.03 -> 1.96 (no help); clamp_indirect 3 -> 1.54 but darkens the gummy by ~4 levels (rejected).",
+  "Colour: coral wall renders (237,102,104) vs palette coral (255,106,92) after key 850->420 W (at 850 it was a washed (245,140,144)); white stripes p99 ~244.",
+  "Meta written each build: renders/meta/s03_gummy.json with per_frame tau_s and rate (180 values each) and events {impact 31, max_squash 38, liftoff 48, slowmo_end 85, realtime 91, second_landing 96, bonk 106, ball_stops 150, whip_start 171, ...}."
+ ],
+ "deviations": [
+  "Wall mirror: storyboard rotation=(90,0,45) is perpendicular to the coral wall (that yaw is the left-wall orientation). Mirror aimed by the camera/gummy bisector (6 deg yaw off the wall normal, 8 deg forward tilt), r 0.30, centre (1.36,1.03,0.84). Mirror + rim made invisible to glossy rays (their floor reflection was a bright ring cut by the frame edge).",
+  "Ball band: a band in the rolling plane is a tyre (rotation invisible) and a 2 cm-proud torus sinks into the floor twice per turn -> thin candy-pink belt 2.5 mm proud with rounded edges, tilted 45 deg to the view axis; ball rides on the belt radius 0.1725 (never intersects the floor).",
+  "Ball deflection: physical reflection about the measured contact normal (restitution 0.8) -> rebounds front-LEFT and stops at f150 clear of the gummy, instead of storyboard front-right (a front-right deflection off a left-flank hit requires a glancing contact that pushes the gummy into depth and parks the ball over its base).",
+  "Bonk response: storyboard lean_y phase +0.6 pops to 0.17 at u=0 -> lagged sideways drag 0.4 e^-3.5u sin(2pi 2.2(u-0.04)); lean along the measured contact normal (storyboard lean_x sign leaned toward the ball), amplitude 1.15 (0.8 read timid), plus stretch-first vertical pulse (-0.08) and ear-flop pulse (0.5).",
+  "Airborne wobble rocks along the bunny's nose-tail axis (reads sideways) instead of its narrow axis; airborne squash/stretch oscillates about the centre of mass (base = ballistic - (hf-1)*0.263, clamped >= 0) which makes lift-off C1.",
+  "Squash rings 1.15/1.40/1.35/1.10 bottom->top (storyboard mid ring 1.25 alone loses 17% volume); ear_flop top layer -0.07 z / +0.06 back, weighted 1.0/0.75/0.35 head->tail.",
+  "Gummy mesh fan-filled (kit leaves a hole) and relaxed with 12 vertex-averaging passes (no remesh, -1% volume), re-grounded; absorption colour mix(lime, mint 0.3) density 3.5 (pure lime turned the thick body orange-brown against the coral wall); gummy hidden f1-12 (it hangs at z 2.6 before tau0 and showed in the f1 chrome close-up).",
+  "Lighting: studio_rig key 420 W instead of 850 (everything sat on PBR Neutral's shoulder, desaturating the coral block); world candy_sky_nosun 0.25 (was 0.3), seen x3.6 by glossy rays only (Light Path node) so chrome/coat reflect a pastel candy sky instead of slate grey. Rig rim kept as built (it is behind the coral wall, <1% contribution); an in-room back light was tested and rejected (erases floor reflections). Exposure -0.2 unchanged.",
+  "Fourth-wall card emission 1.1 instead of 0.35 (read muted mauve in the bright S03 ball), glossy/transmission only with emission sampling off; plus a matching blush side card at the front-left where the floor->mirror path exits the diorama.",
+  "Block stack base moved (0.85,1.05) -> (0.66,1.22) so the violet block no longer kisses the mirror rim.",
+  "Pull-out: ease_out_cubic in log-distance plus a zero-slope bump for a ~1.7% SETTLE, exactly locked at f15; target glides ball->gummy; f-stop 8 -> 2.2 and focus from the ball's mirror image (centre-8 cm) to the gummy, matching S02's f/8 push end; camera at f1 is 0.614 m (not 0.59) for the exact 1536 px.",
+  "Whip: added an off-frame blush 'hall' wall with candy panels right of the diorama (azimuth ~8-66 deg; never in the locked frustum) so f177-180 streak into candy bands like S04's foyer instead of a flat blush void; whip continues at 16.5 deg/f past f180 for a symmetric f180 shutter.",
+  "Final samples 384 (storyboard 512): 512 costs ~1.8x for ~16% lower gummy noise variance; see timing note."
+ ],
+ "known_issues": [
+  "Over budget: ~27 s/f estimated idle at 384 spp (~1.35 GPU-h vs 1.00 planned); 512 spp would be ~1.65-1.85 GPU-h. 256 spp (S03_FSPP=256) fits the budget with marginal visual loss.",
+  "Residual denoiser variance inside the moving gummy (seed-to-seed mean ~1.6-1.9 levels, p99 ~10-13) could read as a faint interior shimmer during the 0.2x slow-mo; the static-region QA cannot catch it and more samples barely help. Worth one look at a final-quality strip played as video.",
+  "Ball rebounds front-left (physical) instead of the storyboard's front-right; it ends resting left of the gummy.",
+  "Stylisation tricks: mirror and rim are invisible to glossy rays (no image in floor or chrome ball), and the world is boosted x3.6 for glossy rays only.",
+  "Pull-out frames f5-13 show the floor slab's front-left edge and the blush void in the bottom-left corner (diorama look).",
+  "f1 circle match: the motion-blurred ball has a solid core of ~1370 px with a 50%-coverage rim at 1536 px (half-shutter pull-out); the S02 side should be compared on the cut-pair sheet.",
+  "Max squash (f38) is extreme (the bunny reads almost lying flat); storyboard fallback A (S03_SQCAP) is available if reviewers object.",
+  "After the bonk the wobble decays by ~f140, so f140-170 is a static hold.",
+  "Test/look-dev env hooks remain in the script (all default off); finals must run with no S03_* variables set."
+ ],
+ "dopa_bugs": [
+  "D.col() treats any 4-tuple as sRGB and re-linearises it, so passing D.mix_col() output (already linear RGBA) into helpers such as mat_glass(absorb_color=...) linearises twice (darker, oversaturated). Worked around by setting the node input directly.",
+  "D.parse_frames supports only one ':step' suffix for the whole spec: '1-16,25-100:5' raises ValueError (too many values to unpack). Worked around with explicit frame lists.",
+  "D.stanford_bunny leaves one 22-edge boundary loop (under the chin, ~z 0.12 at height 0.75) that bmesh holes_fill skips, so the mesh is not watertight for absorption glass. Fan-filled in the shot script.",
+  "D.studio_rig places the Rim at (1,4,4.5)*scale, which for a size-3.4 diorama_corner is outside the room behind the right wall and almost fully blocked (<1% contribution). Kit/storyboard mismatch, left as is.",
+  "Storyboard (not dopa): S03 wall-mirror rotation=(90,0,45) is perpendicular to the coral wall; the bonk lean_y phase +0.6 pops at u=0; the lean_x sign leans toward the ball; 'band plane perpendicular to rolling axis' hides the rotation.",
+  "Blender (not dopa): bmesh.ops.smooth_laplacian_vert was a no-op on this mesh (0 mm displacement); bmesh.ops.smooth_vert used instead."
+ ],
+ "self_critique": "The shot does its job. The camera is locked, and the drop, the 0.2x squash with lagging ears, the stretch, the airborne rock, the second landing and the bonk appear in lockstep in the glossy floor, the wall mirror and the chrome ball, with stripes visibly bending through the body. The circle match, whip, hit frames and flicker QA are all on spec and measured. Poster quality is good: true coral block, saturated lime gummy with clean highlights, tactile candy blocks, chrome reflecting a pastel candy sky. Where it falls short:\n- Lighting is airy and soft, so contact shadows are faint and the gummy has no backlit glow. An in-room back light gave the glow but erased the floor reflections, and I kept the reflections.\n- The bottom third of the frame is a lot of pale floor.\n- The squash peak is very flat.\n- The bonk rebound goes front-left, not the storyboard's front-right.\n- Cost is ~35% over plan and more samples barely reduce the gummy's interior variance, so a faint shimmer may remain that no static-region metric can rule out.\n- Brightening the chrome reflections relies on a glossy-ray world boost and hiding the mirror from reflections, which a purist reviewer could object to in a renderer promo.\nI would want the lead to play a final-quality f31-60 strip as video before committing the full final."
+}

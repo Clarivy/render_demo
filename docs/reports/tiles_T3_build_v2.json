@@ -1,0 +1,156 @@
+{
+ "id": "tiles_T3",
+ "status": "done",
+ "summary": "All four T3 tile mini-scenes are built and verified, with a preview at a stride, the loop seam (or the end frame for the non-looping toy town), a 200 px readability row, meta with measured final s/f, and a hex contact sheet each. Continued from an interrupted builder; finished scenes were not restarted. t_jelly_cubes (60-f seamless loop) was verified as is: the preview matches the current script and the seam is pixel-identical. Its final cost was measured. t_duck_pool (90-f loop): two stale preview frames (f30, f60) were re-rendered, the seam was checked and the final cost measured. t_sunset_bunny (180-f loop): the gold showed olive-khaki patches where it reflected the HDRI's cool sky (G2 muddy). These became warm amber via a glossy-rays-only rose tint on the map. The preview stride and every seam frame 172-181 were re-rendered and the cost re-measured. t_toy_town is NEW: a candy town on a lavender cake-plate on a sky cove. The sun sweeps one day over 180 straight frames (loop null). Long morning shadows point right, swing round behind the houses at noon and stretch left in the evening. Cool lavender sky fill colours the shadows, and the windows glow at dusk. Total final cost for the four scenes is about 0.29 GPU-h. Every scene is under the 0.12 GPU-h cap, measured on an idle GPU 6.",
+ "files": [
+  "shots/t_jelly_cubes.py",
+  "shots/t_duck_pool.py",
+  "shots/t_sunset_bunny.py",
+  "shots/t_toy_town.py",
+  "renders/meta/t_jelly_cubes.json",
+  "renders/meta/t_duck_pool.json",
+  "renders/meta/t_sunset_bunny.json",
+  "renders/meta/t_toy_town.json",
+  "renders/review/t_jelly_cubes_sheet.png",
+  "renders/review/t_duck_pool_sheet.png",
+  "renders/review/t_sunset_bunny_sheet.png",
+  "renders/review/t_toy_town_sheet.png",
+  "renders/preview/t_jelly_cubes/ (f1-58 every 3rd + seam 56-61 + f47)",
+  "renders/preview/t_duck_pool/ (f1-85 every 5th + f30,f60 + seam 86-91)",
+  "renders/preview/t_sunset_bunny/ (f1-171 every 10th + seam 172-181)",
+  "renders/preview/t_toy_town/ (f1-171 every 10th + f180)",
+  "renders/test/t_jelly_cubes/cost_v2/ (final f1,4,19,40 + log.txt)",
+  "renders/test/t_duck_pool/cost_v2/ (final f1,30,31,61,89 + log.txt)",
+  "renders/test/t_sunset_bunny/cost_v2/, cost_v3/ (final, before / after the tint + log.txt), tint_a|b|off/ (A/B)",
+  "renders/test/t_toy_town/cost_v2/ (final f1,45,90,135,180 + log.txt), look_a..d/ (look iterations)",
+  "docs/reports/tiles_T3_build_v2.json"
+ ],
+ "review_images": [
+  "renders/review/t_jelly_cubes_sheet.png",
+  "renders/review/t_duck_pool_sheet.png",
+  "renders/review/t_sunset_bunny_sheet.png",
+  "renders/review/t_toy_town_sheet.png",
+  "renders/test/t_jelly_cubes/cost_v2/f_0004.png",
+  "renders/test/t_duck_pool/cost_v2/f_0031.png",
+  "renders/test/t_sunset_bunny/cost_v3/f_0046.png",
+  "renders/test/t_toy_town/cost_v2/f_0001.png",
+  "renders/test/t_toy_town/cost_v2/f_0180.png"
+ ],
+ "qa": [
+  {
+   "check": "t_jelly_cubes loop seam (preview f61 vs f1)",
+   "value": "mean abs diff 0.031/255, max 1 (dither); neighbour-frame step 5.2-5.4",
+   "pass": true
+  },
+  {
+   "check": "t_jelly_cubes preview is current",
+   "value": "final f1 downscaled vs preview f1: mean 0.84 (sampling noise); off-stride f47 differed (max 136) and was replaced with a fresh render",
+   "pass": true
+  },
+  {
+   "check": "t_jelly_cubes volume preservation / intersections",
+   "value": "volume ratio 1.0 at max squash for all 3 cubes, max rel. deviation over all 60 frames 0.0; no cube-cube intersections (BVH overlap every frame)",
+   "pass": true
+  },
+  {
+   "check": "t_jelly_cubes final cost",
+   "value": "3.4 s/f steady (4.6 / 3.5 / 3.4 / 3.2 s, f1,4,19,40 in one process; nvidia-smi GPU6 0 % before) -> 60 f = 0.058 GPU-h (256 spp, thr 0.02)",
+   "pass": true
+  },
+  {
+   "check": "t_jelly_cubes 200 px + hex",
+   "value": "three candy cubes read clearly at 230x200; hero extent 0.21-0.81 of hex height incl. hops (0.60); saturated px outside hex <= 1.06 % (only the soft coloured glow-shadow of the airborne orange cube at the lower-left hex corner)",
+   "pass": true
+  },
+  {
+   "check": "t_duck_pool loop seam (preview f91 vs f1)",
+   "value": "mean 0.071/255; 66 px (0.02 %) > 8/255 = sun glints on ripple crests (float rounding of the unwrapped wave clock) vs 17,030 px between f90 and f1",
+   "pass": true
+  },
+  {
+   "check": "t_duck_pool stale previews",
+   "value": "f30 / f60 were from an older script (f30 differed by 23.7 mean); re-rendered; other frames match the current script (1.1 mean vs downscaled final)",
+   "pass": true
+  },
+  {
+   "check": "t_duck_pool final cost",
+   "value": "3.5 s/f steady (4.8 / 3.6 / 3.5 / 3.5 / 3.5 s, process wall 21 s for 5 f; GPU6 0 % before) -> 90 f = 0.089 GPU-h (80 spp MNEE + OIDN)",
+   "pass": true
+  },
+  {
+   "check": "t_duck_pool 200 px + hex",
+   "value": "pink pool ring + lemon duck + aqua caustic shimmer read at 230x200; hero extent 0.17-0.80 (0.62); no saturated px outside hex",
+   "pass": true
+  },
+  {
+   "check": "t_sunset_bunny loop seam (preview f181 vs f1)",
+   "value": "mean 0.026/255, max 1; every frame 172-181 rendered",
+   "pass": true
+  },
+  {
+   "check": "t_sunset_bunny gold colour (G2)",
+   "value": "olive-khaki reflection patches (yellow gold x cool blue-grey sky) removed with a glossy-only rose tint #FFCFD8 on the map; A/B in renders/test/t_sunset_bunny/tint_off|a|b",
+   "pass": true
+  },
+  {
+   "check": "t_sunset_bunny final cost",
+   "value": "~1.5 s/f steady (tinted: 3.7 / 1.4 / 1.6 / 1.4 s; untinted 4.2 / 2.0 / 1.3 / 1.3 s); recorded 1.6 s/f -> 180 f = 0.082 GPU-h (128 spp)",
+   "pass": true
+  },
+  {
+   "check": "t_sunset_bunny 200 px + hex",
+   "value": "gold bunny on violet pedestal against coral reads at 230x200; hero extent 0.26-0.87 (0.60); no saturated px outside hex",
+   "pass": true
+  },
+  {
+   "check": "t_toy_town effect visible",
+   "value": "long shadows right (f1-f50) -> short / behind at noon (f75-f110) -> long left (f130-f180), cool lavender shadows vs warm sunlit faces, windows glow f140+",
+   "pass": true
+  },
+  {
+   "check": "t_toy_town final cost",
+   "value": "1.0 s/f mid-day, 1.8 s at the ends (1.8 / 1.0 / 0.9 / 1.0 / 1.8 s, f1,45,90,135,180, process wall 8 s; GPU6 0 % before, 57 % after = another job started) -> recorded 1.2 s/f -> 180 f = 0.061 GPU-h (128 spp)",
+   "pass": true
+  },
+  {
+   "check": "t_toy_town 200 px + hex",
+   "value": "colourful town on a plate, lemon / pink-roof hero house in the centre reads at 230x200; houses + trees 0.23-0.69, with the plate 0.23-0.83 (0.60); no saturated px outside hex",
+   "pass": true
+  },
+  {
+   "check": "t_toy_town contract",
+   "value": "180 straight frames, meta loop null (make_hex_tiles.mini_loop -> 180 straight); all light values closed-form in t, D.bake per frame",
+   "pass": true
+  },
+  {
+   "check": "contract (all four)",
+   "value": "final 1152x998 (checked on the cost frames), preview 576x499; PBR Neutral via D.setup_color, exposure -0.2; static seed (no seed overrides); animation baked with D.bake; meta has frames / loop / res / bg / hero / phenomenon / final s/f + GPU-h",
+   "pass": true
+  },
+  {
+   "check": "total final cost T3",
+   "value": "0.058 + 0.089 + 0.082 + 0.061 = 0.29 GPU-h (each scene <= 0.12 cap)",
+   "pass": true
+  }
+ ],
+ "cost_final_gpu_h": 0.29,
+ "deviations": [
+  "t_toy_town is 180 straight frames, not a loop (meta loop null). The spec allows '180 frames at 30 fps', and a morning -> evening day cannot loop without rewinding the sun.",
+  "t_toy_town: the sun power follows ~1/sin(elevation)^0.6, which is non-physical. A real low sun lights the ground 4x weaker and the long shadows drowned in the sky fill.",
+  "t_toy_town: solar time is warped, s = t - 0.45 sin(2 pi t)/(2 pi), so the long-shadow ends linger and noon passes 1.45x faster.",
+  "t_toy_town: the cove carries a faint self-lift in its own sky colour (emission strength 0.22, emission sampling NONE) so the backdrop never goes grey-lavender when the sun is low.",
+  "t_toy_town: motion blur is off because nothing moves geometrically.",
+  "t_sunset_bunny: reflection (glossy) rays see the sunset map through a rose tint #FFCFD8. Camera rays see the pastel coral BG, and diffuse rays see the untinted map. A sun lamp locked to the map's sunset azimuth adds the shadows (it sits at 22 deg elevation vs the map's 4.5 deg glow).",
+  "t_sunset_bunny: the bunny scan is Laplacian-smoothed (volume-preserving) for a cast-gold finish (predecessor's choice).",
+  "t_duck_pool (predecessor's choices, kept): motion blur off (all motion < 4 mm/f); the tile floor has a faint self-emission ambient lift; the fill light is light-linked away from the pool; final 80 spp with MNEE caustics.",
+  "t_jelly_cubes: the 'one bold hero' is a trio of cubes, as the spec's 'three jelly cubes' requires."
+ ],
+ "open_issues": [
+  "t_toy_town: around noon (about f75-f110) the shadows are short and fall behind the houses, out of the elevated camera's view. The light keeps changing (colour, brightness, faint shadow motion), but this is the calmest stretch of the tile.",
+  "t_jelly_cubes: the soft coloured glow-shadow of the airborne orange cube (f46-f60) brushes the lower-left hex corner, so a little soft shadow is cropped there. Nothing important is outside the hex.",
+  "t_sunset_bunny: mid-loop (about f61-f121) the bunny's shadow falls mostly behind it. The rotation then reads through the moving glints and reflections, and the gold reads amber-orange under the sunset light.",
+  "Costs were measured on an idle GPU 6, which is shared with other builders. Finals-queue wall time will be longer when the GPU is shared, but the GPU-h numbers are the idle measurements.",
+  "Full previews and finals were not rendered (per brief). The finals queue renders all frames."
+ ],
+ "notes_for_critic": "Sheets: renders/review/t_*_sheet.png. Each has the hexagon outlined with the cropped corners dimmed. The stride rows come first, then a seam row (f loop+1 must equal f1), then a 1:1 row of 230x200 downscales for the 200 px check. Full-res frames are in renders/test/<id>/cost_v2 (bunny: cost_v3). Toy town is the new scene: look at f1 vs f180 for the shadow swing and at f150-f180 for the dusk window glow. Two roof decisions are deliberate: 45 and 54 deg glossy gables mirrored the noon sun into the camera and flared the hero's pink roof white, so the roofs are 40 deg satin candy. Bunny: compare renders/test/t_sunset_bunny/tint_off vs tint_a for the olive-patch fix. Duck: the bright specks are sun glints on ripple crests, not fireflies."
+}

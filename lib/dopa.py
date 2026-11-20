@@ -101,10 +101,21 @@ def reset_scene():
 ALLOWED_GPUS = {"6", "7"}  # project rule: at most 2 GPUs on the shared box -> only GPU 6 and GPU 7
 
 
+def _in_slurm_gpu_job():
+    """True inside a Slurm allocation that holds GPUs. This cluster sets ConstrainDevices=yes (cgroup v2), so a
+    process in the job can only see the GPUs Slurm allocated to it: any CUDA_VISIBLE_DEVICES there is safe.
+    (2026-11-20: the user allowed Slurm jobs with up to 4 GPUs; outside Slurm the GPU 6/7 rule still holds.)"""
+    return bool(os.environ.get("SLURM_JOB_ID")) and bool(
+        os.environ.get("SLURM_JOB_GPUS") or os.environ.get("SLURM_STEP_GPUS") or os.environ.get("SLURM_GPUS_ON_NODE"))
+
+
 def _gpu_guard():
-    """Abort unless CUDA_VISIBLE_DEVICES is set and names only allowed GPUs (never all 8 by accident)."""
+    """Abort unless CUDA_VISIBLE_DEVICES is set and names only allowed GPUs (never all 8 by accident).
+    Inside a Slurm GPU job the allocation itself (cgroup-constrained) is the allowed set."""
     vis = os.environ.get("CUDA_VISIBLE_DEVICES", "").strip()
     ids = [v.strip() for v in vis.split(",") if v.strip()]
+    if ids and _in_slurm_gpu_job():
+        return
     if not ids or not set(ids) <= ALLOWED_GPUS:
         sys.stderr.write(f"[dopa] REFUSING TO RENDER: CUDA_VISIBLE_DEVICES={vis!r}; this project may only use "
                          f"GPU 6 and/or 7. Run e.g.  CUDA_VISIBLE_DEVICES=6 tools/blender/blender ...\n")

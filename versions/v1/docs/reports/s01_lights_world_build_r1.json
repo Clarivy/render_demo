@@ -1,0 +1,66 @@
+{
+ "id": "s01_lights_world",
+ "status": "ready_with_issues",
+ "script": "/home/qzhao/render_demo/shots/s01_lights_world.py",
+ "preview_dir": "/home/qzhao/render_demo/renders/preview/s01_lights_world",
+ "preview_frames_complete": true,
+ "review_sheet": "/home/qzhao/render_demo/renders/review/s01_lights_world_sheet.png",
+ "final_s_per_frame": 8,
+ "final_test_frames": [
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0061.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0113.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0165.png"
+ ],
+ "final_timing_note": "Final mode is 1920x1080, 16-bit PNG, 384 spp, adaptive threshold 0.008, OIDN. [dopa] times were 8.6 s (f61), 7.8 s (f113) and 7.5 s (f165) while GPU 6 was at 100% and shared with other builders. Uncontended runs earlier on the same scene took 3.5-4.5 s/f (f61 4.1 s, f150 3.5 s). So 240 frames is roughly 16-32 min on one GPU (0.27-0.53 GPU-h), within the 0.60 GPU-h budget. The first frame of a process adds about 3 s of setup. Preview (50%, 128 spp) runs about 1.0-1.7 s/f.",
+ "iterations": 11,
+ "measurements": [
+  "Loop check on the final preview: mean |f195 - f135| = 0.042/255 (target < 0.5/255); max 8 levels on 35 px (crank sub-pixel blur).",
+  "Shadow azimuths measured from orthographic top-view renders: f121 315.5, f150 42.6, f165 135.5, f180 223.5, f225 359.5 deg (expected 315/45/135/225/0).",
+  "Landing visibility, by Blender ray casts from the shot camera to 13 points per shadow ray plus the tick: 315, 45 and 225 fully visible; 135 (mint) all but its far rim point (r 1.37). For 0 deg the nodus blob and orange tick are visible, but the mid-line (r 0.85-1.15) is behind the bunny. Gnomon base visible. With the storyboard layout only 4/13 mint points were visible.",
+  "Neutral-sum split at f61: single-occlusion shadows read violet / lemon-yellow / aqua, and double-occlusion fringes show the remaining primary. The triple-occluded core measures (0,0,0). f91 has the same geometry with colours permuted (aqua / violet / yellow).",
+  "Plate tint during the split (linear chroma model): median 0.40 at the storyboard circle r 0.8, down to 0.28 at r 0.5.",
+  "Sunlit day plate reads 0.888 display luminance at world strength 0.32 (0.93 at the spec's 0.45; target about 0.88).",
+  "Night white-orb plate: p50 0.80, p90 0.89 display, no clipping.",
+  "Launch hand-off plate luminance goes 0.80, dips to 0.78 (f111-113), then rises to 0.888 by f120, with no flash. The spec curves peaked at 0.93 around f110.",
+  "Dawn background sweep second difference max 5.5 levels (was 28 with linear-RGB stops).",
+  "Temporal check on all 239 consecutive pairs: the f121-135 hold differs by only 0.039/255 mean (dither). Only scripted events (pop, split, merge, launch, clicks) exceed 1.5/255 mean change; no flicker.",
+  "Framing: orbs 7.6-13.0% below the frame top, cake bottom at 93.8%, plate about 46% of frame width.",
+  "Final 16-bit frames are clean; f1 brightened 4x shows no noise, and full-resolution crops of f61 and f165 show no fireflies, blotches or interpenetration."
+ ],
+ "deviations": [
+  "Split-light circle radius 0.80 -> 0.50 around (0, 0.05), with all three lights on a level ring at z 1.75 (spec 1.75 / 1.90 / 1.80). This makes the plate whiter and makes 'each light keeps its height' and 'f91 = f61 geometry, colours permuted' both exactly true.",
+  "Halo radius 0.065 -> 0.08, plus a compositor BLOOM driven only by the Emit pass (threshold 0.6, image-relative size 0.45). Only the halo markers glow, so the coloured orbs read coral / lime / blue.",
+  "Camera 45 -> 46 mm, locked pose (0,-6.30,2.75) -> (0,-7.20,3.00), target (0,0.10,0.55) -> (0,0.10,0.38). The whole floating cake is now in frame with orb headroom. The phase-A push-in is 4.5% along the view axis instead of (0,-0.30,+0.10).",
+  "Chrome probe (-0.92,-0.10) r 0.32 -> (-1.05,-0.32) r 0.30. The storyboard probe completely hid the mint (135 deg) landing from the camera. Surface clearance to the 225 deg ray is 0.22 m (storyboard 0.26 m).",
+  "Clay bunny (0.86,-0.34) yaw -21 height 0.50 -> (1.00,-0.50) yaw -28 height 0.44. Its ears hid the lemon (45 deg) landing. Centre clearances are now 0.354 m to the 315 deg ray and 0.50 m to the 0 deg ray.",
+  "Hue ticks: radius 0.045 -> 0.052, length 0.22 -> 0.25, centred at r 1.27 (pips too). Pivots sit at the contact point, and object motion blur is off on the ticks so the f191-194 pop cannot smear into f195.",
+  "Added a small gold collar at the gnomon base so the candy cane looks planted.",
+  "World day strength 0.45 -> 0.32, tuned to the storyboard's own target of about 0.88 on the sunlit plate.",
+  "Launch timing: the bloom curve is smoothstep instead of ease_out_cubic over f106-121. The orb power fades as 150 x (1 - bloom) from f106 instead of 150 -> 0 over f110-120, with halo emission fading in step, plus a 3.5 cm crouch and squash over f102-108.",
+  "Camera background is a static screen-space vertical gradient (Window.y), which cannot strobe: ink to #2A2152 at night, lavender to sky by day. The ink -> sky transition follows a dawn path through indigo and lilac in sRGB with perceptually spaced stops, because a plain mix passed through grey.",
+  "f1-15: a glossy-only, light-linked lavender MoonRim AREA light (plate, cake and gold base excluded) gives rim glints on the black silhouette. It is off by f19.",
+  "Phase A: a glossy-only night sky in the world (navy to indigo by elevation, fading with the bloom), so the probe and candy coats reflect the night instead of black. Diffuse rays never see it.",
+  "Globe emission is 0 in phase A and keyed to 0.3 with the bloom, so the night stays lamp-only.",
+  "Extra meta key 'camera_view_az_deg' (90.0) for the lat-long overlay strip. Events and per_frame theta_deg / tilt_deg are as specified."
+ ],
+ "known_issues": [
+  "The night plate is not uniformly white. Each light's 1/d^2 pool still tints the plate edges pastel (pink front at f61, bluish front at f91). The centre is near-white and the complementary shadows read correctly. A fully white plate would need lights far higher than the frame can hold.",
+  "Glide end (theta 405 -> 0 deg landing, f225-240): the middle of the shadow line (r 0.85-1.15) passes behind the clay bunny's body from the camera. The nodus blob and the popping orange tick are visible. The 315-360 deg sector is too narrow for a bunny-sized prop that clears both the rays and the sight lines.",
+  "The far rim (r about 1.37) of the mint-landing nodus shadow is still clipped by the probe; the shadow line, blob centre and mint tick are visible.",
+  "The compositor bloom is a new element in the film pipeline (in-Blender, deterministic, Emit pass only). The lead should confirm it is acceptable and decide whether other orb shots (S02, S05) should match it.",
+  "The split burst (f51-54) moves the lime and blue lights about 0.3 m/frame, above the 10 cm/frame guideline. Cycles does not motion-blur lights, so their shadows jump for 2-3 frames while the halos streak. It reads as a burst, but it is the least smooth moment of phase A.",
+  "In the day the sky globe reads somewhat pale (spec emission 0.3 plus coat) and small. Its turning reads mainly through the card patches and the pink crank.",
+  "At night the moved probe sits at the plate's left edge reflecting navy, so it is less of a hero than in the storyboard. By day it is fine.",
+  "Final s/f was measured under GPU contention (7.5-8.6 s); uncontended it is about 4 s."
+ ],
+ "self_critique": "The first version proved the shot was buildable, but it was not refined. The night plate was washed pink, yellow and lavender by each light's falloff. The island sat cut off at the frame bottom with orbs grazing the top. The night-to-day background passed through grey. f1 was a muddy mauve. Worst, the storyboard layout hid two of the five shadow landings from the camera: the probe hid the whole mint tick and the bunny hid the lemon tick. I would not have caught that without ray casts.\n\nOver about 11 rounds I fixed these in turn:\n- A smaller light circle on a level ring.\n- A re-framed camera.\n- An Emit-only bloom so the orbs read as coloured lights.\n- A static gradient background with a perceptually even dawn sweep.\n- A light-linked rim light for an elegant lights-off.\n- A glossy-only night sky so chrome is not a black hole.\n- Probe and bunny moved off the landing sight lines, checked by ray casts and top views.\n- The launch rechoreographed so the sky blooms in the orb's wake without a flash.\n\nThe QA numbers are solid: loop diff 0.042/255, measured shadow azimuths within 2.4 degrees, a black triple-occlusion core, no flicker in the hold frames.\n\nRemaining weaknesses:\n- The plate is still pastel-tinted at the edges during the split.\n- The 0-degree glide landing is partly behind the bunny.\n- The fast split burst briefly exceeds the light-speed guideline.\n- The island fills only about 46% of the width. The orbs and the floating cake must share the locked frame, so the day frames can feel a bit sparse, though that space hosts the overlay strip.\n\nSeveral storyboard positions moved, all logged as deviations. I chose to keep the frontal camera rather than a yawed one because the yaw drove the gnomon through the globe.",
+ "dopa_bugs": [
+  "No defect found in lib/dopa.py; every storyboard call matched the real signatures.",
+  "Limitation: world_hdri's camera_bg is one flat colour. The script adds a Window.y gradient and a glossy-only night term to the world tree.",
+  "Limitation: D.light exposes only camera visibility. Diffuse/glossy ray visibility and light linking (receiver collection with EXCLUDE) are set directly in the script.",
+  "Limitation: D.capsule is centred with no base pivot. For pills lying on a surface the script transforms the mesh so the origin is at the contact point (needed for volume-preserving pops).",
+  "Gotcha: D.cylinder's default bevel 0.05 exceeds half the depth of thin pucks (globe base 0.04, collar 0.035), so pass bevel explicitly.",
+  "Gotcha: setup_color sets dither_intensity 1.0, so identical scene states differ by +-1 level in 8-bit preview frames (mean 0.04/255). This is harmless but visible in frame-difference QA.",
+  "Note: D.spring(t, 2.5, 8), the storyboard POP spring, overshoots about 23%, not about 20%."
+ ]
+}

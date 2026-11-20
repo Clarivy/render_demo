@@ -1,0 +1,57 @@
+{
+ "id": "s05_title",
+ "status": "ready_with_issues",
+ "script": "/home/qzhao/render_demo/shots/s05_title.py",
+ "preview_dir": "/home/qzhao/render_demo/renders/preview/s05_title",
+ "preview_frames_complete": true,
+ "review_sheet": "/home/qzhao/render_demo/renders/review/s05_title_sheet.png",
+ "final_s_per_frame": 10,
+ "final_test_frames": [
+  "/home/qzhao/render_demo/renders/test/s05_title/f_0001.png",
+  "/home/qzhao/render_demo/renders/test/s05_title/f_0050.png",
+  "/home/qzhao/render_demo/renders/test/s05_title/f_0120.png"
+ ],
+ "final_timing_note": "[dopa] final at 1920x1080 / 384 spp / threshold 0.01 on GPU 6: f1 9.7 s, f50 10.6 s, f120 9.3 s (each includes per-process setup). That is about 10 s/f, so 120 f is about 0.33 GPU-h, under the storyboard's 11 s/f. Preview (50%, 128 spp): 2.65 s/f for f1-60 and 0.97 s/f for f61-120.",
+ "iterations": 7,
+ "measurements": [
+  "f1 orb match: 466 px wide in the final-quality frame, centred at (959.4, 539.3). Target ORB_PX = 468 +-10; the analytic value from the camera distance (1.3728 m to a 0.12 m halo) is 468.0. ORB_PX is a constant at the top of the script.",
+  "Final lockup at f120: title 65.08% of frame width (x 335-1584 px, centred); baseline 69.63% from top; title top 54.66%; tile band 3.24-29.66% from top; orbs between band and title at 34.8-40.1% (white key orb 37.5%). At f34 the title is 66.3% wide because the last letters are still falling.",
+  "Tile vs letter luminance (mask render, preview f120, S01 tile real, S02-S04 placeholders): linear relative luminance 0.237 vs 0.461, ratio 0.52 (limit 0.60), and 0.44 at f90. In gamma-encoded display luma the ratio is 0.77 (0.67 at f90).",
+  "Lemon letter legible on lavender in the full-res f120 crop: pillow shading, contact shadow and gloss highlight separate it.",
+  "Letter-letter clearance from a per-frame squash/tilt/lift check of the real outlines, all 120 frames: minimum 5.27 cm (pair aR at f24). Every pair is at least 5.2 cm, so no intersections. Letters also never go below the floor: the lowest outline point is lifted onto it.",
+  "Flicker (preview strip f38-75, mean consecutive-frame difference over static floor and wall regions): 0.06-0.11/255 during the holds (f50-61, f71-75). The fuse f62-68 changes up to 4.8/255, which is real lighting change. The invisible light swap f70->71 measures 0.26-0.31/255.",
+  "Fringes: in the f50 full-res crop, aqua, violet and lemon fringes show in the letter gaps and at the bases. In the f120 crop each letter has one neutral crisp shadow.",
+  "Tile proxies for the final full preview: s01_lights_world = REAL preview frames f1-120. s02_caustics = placeholder (no preview yet). s03_gummy = placeholder (no preview yet). s04_every_dot = placeholder (preview only 46/120 of the needed f31-150 when last checked). Recorded in renders/proxies/manifest.json.",
+  "Meta written at build time in every mode: renders/meta/s05_title.json (events, empty per_frame, plus orb_px_f1, the lockup numbers and per-pair letter clearances)."
+ ],
+ "deviations": [
+  "Letters: not text3d(bevel 0.07) + separate-loose. Measured: that bevel makes neighbours interpenetrate by 11 cm at rest, the 'a' counter collapses into a stray 11th part, and negative-offset variants self-intersect (black artefacts). Each glyph instead comes from the original oriented Fredoka Bold Bezier contours via D.text3d, unioned with the nonzero-winding rule and inflated into a closed pillow solid (circular profile, R 0.075, side half-band 0.035). One object per letter, origin at base centre, sorted left to right.",
+  "Shape-aware letter spacing: constant 8 cm horizontal clearance between outlines, then the word is scaled to 4.4 m (title 65.1% of width).",
+  "Every letter leans right on landing (storyboard: alternating +-6 deg). Squash 0.30 and 6 deg are kept, and a 6% stretch along the fall is added. Alternating signs tip every other letter into its just-landed neighbour and needed a 10 cm gap.",
+  "Orbs moved 0.6 m in front of the title instead of 1.2 m in front of the camera-side: O = (0,-0.6,1.30); coral (-1.45,-0.6,1.22), lime (0,-0.6,1.38), blue (1.45,-0.6,1.22). Same 0.49/1.05/0.94 x 260 W neutral split. This took the hottest spot out of the foreground floor and widens the shadow fringes. Halo r 0.085 (storyboard 0.07); W halo stays r 0.12 at f1 for the ORB_PX match.",
+  "Honeycomb: 12 rounded-corner tiles, circumradius 0.48 at 0.80 spacing, zig-zag 2.04 +- 0.20, floating 12 cm off the wall so shadows read on it (storyboard: 10 tiles x 0.55 at 0.88, on the wall). The rim is a rounded hex tube made by curve bevel, replacing D.torus(major_seg=6). Playing tiles are still the middle four in story order. Screen UVs are scaled with the tile, so the central 65% of the clip width still shows.",
+  "Tile screens: the picture drives Emission only, on a dark ink base (the storyboard's 'tile screen' custom setup slot); emission 0.45. With D.mat_video's picture on Base Color, the stage light made the screens 0.93-1.05x the letters' luminance at any emission.",
+  "Added a glossy-only 3.2 x 0.7 m strip softbox (260 W, diffuse visibility off, light-linked to the letters only) for clear-coat highlights. It casts no shadows and lights nothing diffusely.",
+  "Fill 110 W (storyboard 160 W). DOF f/1.4 at f1 to f/4.0 by f24 (storyboard f/2.8 to 4.0), so the hexes behind the f1 orb are soft blobs.",
+  "Pull-back: log-distance with ease_out_back(s=0.5) over f1-34. It arrives about f23, overshoots 1.4%, settles at f34 (storyboard: ease_out_cubic to f24, then SETTLE 1.5%). The 1% push over f24-120 is kept.",
+  "Coloured halos have tiny radius offsets (0.0004 m) and the white halo envelops them during the f67-71 cross-fade, to avoid coincident-sphere z-fighting."
+ ],
+ "known_issues": [
+  "S02, S03 and S04 tiles are still labelled placeholders (only S01's preview was complete). The lead must re-run scripts/make_tile_proxies.py and re-render S05 once the upstream previews or finals exist. The placeholders are brighter and more saturated than real footage will be.",
+  "The 60% luminance rule passes in linear relative luminance (0.52) but not in gamma-encoded display luma (0.77). If the lead means display luma, set TILE_EMIT to about 0.25.",
+  "The colour-fringed shadows read clearly at full res in the gaps, at the bases and around the floating tiles. At thumbnail size the superposition mainly reads through the floor's coral/lemon/white/blue wash collapsing to neutral and the orbs merging. Front lights hide most of the floor shadows behind the letters by geometry.",
+  "Before f71 the letters' colours are tinted by the coloured lights (left warmer, right cooler); true palette colours appear from the fuse on.",
+  "The pull-back starts at full speed on f1 (orb about 17% smaller by f2). It reads as a launch from S04's static orb, but could feel like a jolt at the cut; a 2-frame ease-in is a one-line change in pull_e().",
+  "The white orb is a flat emissive disc without bloom (same as S04's dot-orb; Cycles has no glare).",
+  "The bottom ~30% of the frame is plain lavender floor, a consequence of the locked lockup (baseline 68-72%).",
+  "ORB_PX = 468 is assumed; I could not measure S04's f180 orb myself. Retune the constant once S04's value is recorded.",
+  "Cosmetic: meta letter_clearance_min_m collapses the duplicate pair key 'er' (the global minimum is still correct). The script still holds an unused _tri_inside helper and an S05_DEBUG_GAPS debug block."
+ ],
+ "dopa_bugs": [
+  "D.text3d(..., to_mesh=True) leaves front/back caps unwelded from the sides (44 loose parts for 10 letters), so the storyboard's separate(type='LOOSE') needs a weld (remove doubles) first.",
+  "Blender fills Fredoka-Bold.ttf glyphs with overlapping contours ('a', 'n') even-odd, so D.text3d meshes get broken caps and a collapsed 'a' counter under a large bevel. Not dopa code, but it affects any D.text3d title. Workaround: read the FONT->CURVE Bezier contours and apply the nonzero rule.",
+  "D.mat_video links the picture to Base Color as well as Emission, so a tile lit by the scene reflects stage light like a painted card; it cannot be dimmed below about 0.93x the title via emission. A screen-style option (emission only, dark base) would help.",
+  "D.cylinder(segments=6) starts with a vertex at local +Y. Under the storyboard's rotation=(90,0,0) that gives POINTY-top hexes, not the flat-top hexes the storyboard asks for. D.torus(major_seg=6) pinches its tube cross-section at the corners. I built my own rounded hexes and rim."
+ ],
+ "self_critique": "The end frame is close to the 精致 bar. The inflated candy letters have exact Fredoka outlines and open counters, a pillow profile, a clear coat with crisp strip highlights, soft form shading and one crisp shadow each. The palette reads true after the fuse, the lemon 'e' holds on lavender, and the lockup lands inside every numeric rule. Temporal stability is good (holds at about 0.1/255 between frames).\n\nWeaker parts:\n- The superposition proof is honest but subtle. The fringes are visible in the gaps and around the floating tiles at full res, but the strongest read is the floor's colour wash snapping to neutral as the three orbs merge, not the shadow geometry itself.\n- The composition is sparse: a thin title row, a busy band and an empty lower third.\n- The orbs are small flat discs.\n- I could not validate the band with real S02-S04 footage, and the luminance rule only passes under the linear-luminance reading.\n- I spent the early iterations rebuilding the letters, because the storyboard's bevelled text was geometrically broken with this font. That left less time for lighting polish, e.g. a stronger key-to-fill contrast and a floor vignette."
+}

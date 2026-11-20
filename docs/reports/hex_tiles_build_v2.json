@@ -1,0 +1,525 @@
+{
+ "id": "hex_tiles",
+ "part": "hex-tile content library, scripts/make_hex_tiles.py (docs/storyboard_v2.md section 4)",
+ "status": "done",
+ "written": "2026-11-20T16:16:03",
+ "gpu": "none (CPU only; no Blender process was started)",
+ "summary": "make_hex_tiles.py builds the finale's hex-tile library to the v2 contract: renders/hex_tiles/<id>/h_0001..0180.png (1152x998, 16-bit sRGB, flat-top hex inscribed, frame k = finale frame k with loops/holds resolved), c_painting/still.png (2544x2204, 16-bit), manifest.json (version 2 schema) and the contact sheet. Source priority final -> preview (Lanczos x2) -> labelled placeholder, never mixed inside a tile; a frame counts only if it ends with IEND and decodes; atomic directory swaps (renameat2 RENAME_EXCHANGE, two-rename fallback); lock file; idempotent (content signatures, metadata-only refresh); one process pool. Current state (last run 2026-11-20T16:14:48): the 6 chapter tiles are from v1 finals; c_s04_gallery uses the documented fallback renders/final/s04_every_dot (v1, identical f1-30) because renders/final/s04_subject does not exist yet; the centre still is the S04 preview overscan (1272x1102, Lanczos x2); the 12 minis are labelled placeholders because no mini has a complete preview or final yet (their previews on disk are sparse test frames).",
+ "files": [
+  "/home/qzhao/render_demo/scripts/make_hex_tiles.py",
+  "/home/qzhao/render_demo/renders/hex_tiles/manifest.json",
+  "/home/qzhao/render_demo/renders/hex_tiles/<tile_id>/h_0001.png .. h_0180.png (18 tiles) + SOURCE.json",
+  "/home/qzhao/render_demo/renders/hex_tiles/c_painting/still.png + SOURCE.json",
+  "/home/qzhao/render_demo/renders/review/hex_tiles_sheet.png",
+  "/home/qzhao/render_demo/docs/reports/hex_tiles_build_v2.json"
+ ],
+ "rerun": {
+  "anytime (picks up whatever is complete; unchanged tiles are skipped)": "cd /home/qzhao/render_demo && tools/venv/bin/python -I scripts/make_hex_tiles.py",
+  "finals queue (render_finals.py --film v2, after the twelve t_* finals and the s04_subject final + overscan job, before s05_finale)": "cd /home/qzhao/render_demo && tools/venv/bin/python -I scripts/make_hex_tiles.py --require-final  # exit 0 = every tile and the centre are from finals; exit 2 = lists what is not final (it still builds everything it can, so the manifest is current); the S05 final guard reads manifest.json all_final / per-tile source",
+  "other flags": {
+   "--only id,id": "build only these tiles (ids, or c_painting for the centre); the manifest still lists every tile on disk",
+   "--placeholder-only": "every selected tile and the centre as placeholders",
+   "--dry-run": "resolve sources and print the source table; writes nothing",
+   "--print-plan <id>": "per-frame source map of one tile (e.g. 109 0.143*f1 + 0.857*f175)",
+   "--force": "rebuild even when up to date",
+   "--jobs N": "process-pool size (default 24)",
+   "--no-sheet": "skip the contact sheet"
+  },
+  "timing": "steady-state re-run 6.7-8.7 s (all up to date + sheet); full --force rebuild 49.8 s on 24 processes (chapter tiles 0.7-4.5 s each, placeholder tiles ~2.2 s each, centre 2.4 s); a mini from final is a byte copy of its loop frames + hard links",
+  "disk": "4.1 GB now; expect ~6-8 GB once all twelve minis are real (16-bit PNG ~3-5 MB per unique frame; repeated frames are hard links)"
+ },
+ "contract": {
+  "tile_png": "1152x998, 16-bit RGB, sRGB-encoded; flat-top hexagon inscribed: vertices (0, 499) and (1152, 499), flat edges y = 0 and y = 998",
+  "screen_uv": "flat-top screen hexagon of circumradius R centred at the origin (x right, y up): u = 0.5 + x / (2 R), v = 0.5 + y / (2 R * 998 / 1152); the centre still uses the same mapping with 2544 x 2204 (v = 0.5 + y / (2 R * 2204 / 2544))",
+  "chapter_crop": "a 1247.08 x 1080 window (the flat-top hex spanning the frame height) at centre (cx, 540) of the 1920x1080 frame, one Pillow Lanczos resample with an exact sub-pixel box to 1152x998 (cross-fades are mixed before the resample); previews use the same box scaled by 0.5",
+  "mini": "final 1152x998 16-bit RGB frames are byte-copied (after a decode check); other sizes (preview 576x499) Lanczos to 1152x998; meta loop L (2..180) -> tile frame k = source ((k-1) mod L) + 1 (needs only frames 1..L), loop null -> 180 straight frames",
+  "centre": "renders/final/s04_subject/overscan.png byte-copied if 2544x2204 16-bit, else preview overscan Lanczos x2, else placeholder = the painting scan with the overscan geometry from renders/meta/s04_subject.json (uv_rect, mirror_above_v, pingpong_band_v), falling back to the storyboard_v2 section 2 numbers",
+  "manifest_extras": "besides the schema fields every tile entry carries source_dir, dir, first, cyclic (true only if frame 180 -> 1 wraps seamlessly), palette_hex, ground, title, note, deviation, resample, meta_bg; top level: all_final, missing, hex, screen_uv, frame_rule. SOURCE.json per tile adds the full per-frame map and the signature"
+ },
+ "tiles": [
+  {
+   "id": "c_s01_night",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s01_lights_world",
+   "source_dir": "renders/final/s01_lights_world",
+   "frames_src": [
+    [
+     31,
+     105
+    ]
+   ],
+   "loop": {
+    "mode": "pingpong",
+    "period": 148,
+    "cyclic": false
+   },
+   "crop_cx": 960.0,
+   "palette": "blue",
+   "label": "Point lights",
+   "cyclic": false,
+   "deviation": "window f31-120 in storyboard_v2 -> f31-105",
+   "note": "orb glide, split into coral / lime / blue, carousel, merge to white; ping-pong turns on the white orb at rest (f101-105). Window ends at f105, not f120: the launch would bloom the dark tile to daylight"
+  },
+  {
+   "id": "c_s01_day",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s01_lights_world",
+   "source_dir": "renders/final/s01_lights_world",
+   "frames_src": [
+    [
+     121,
+     240
+    ]
+   ],
+   "loop": {
+    "mode": "pingpong",
+    "period": 238,
+    "cyclic": false
+   },
+   "crop_cx": 960.0,
+   "palette": "blue",
+   "label": "Env-map clicks",
+   "cyclic": false,
+   "note": "locked camera: four 90-degree env clicks on the beat (tile f16/31/46/61), glide, tilt; the ping-pong turns on the settled tilt wobble (f240) and plays glide and click 4 back"
+  },
+  {
+   "id": "c_s02_wide",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s02_caustics",
+   "source_dir": "renders/final/s02_caustics",
+   "frames_src": [
+    [
+     1,
+     60
+    ],
+    [
+     121,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "xfade",
+    "xfade_frames": 6,
+    "period": 108,
+    "cyclic": false,
+    "join": "xfade6"
+   },
+   "crop_cx": 1000.0,
+   "palette": "mint",
+   "label": "Caustic drop-ins",
+   "cyclic": false,
+   "note": "same camera on both sides of the macro gap (only the orb moved), so the windows join with a 6-frame cross-fade; the loop dissolves the mirror-ball push back into the room (a ping-pong would reverse the push at full speed). cx 1000 keeps the drop-ins, orb, crystal bunny and most of the mirror ball"
+  },
+  {
+   "id": "c_s02_macro",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s02_caustics",
+   "source_dir": "renders/final/s02_caustics",
+   "frames_src": [
+    [
+     61,
+     120
+    ]
+   ],
+   "loop": {
+    "mode": "pingpong",
+    "period": 118,
+    "cyclic": false
+   },
+   "crop_cx": 840.0,
+   "palette": "mint",
+   "label": "Caustics macro",
+   "cyclic": false,
+   "note": "orb arc and camera slide ease out to rest at f120 (change 0.1/255), so the ping-pong turns cleanly; cx 840 frames the lemon ball with its hot focal caustic and the heart with its pink caustic (the ring sits on the frame edge and is half in; c_s02_wide shows it whole)"
+  },
+  {
+   "id": "c_s03_gummy",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s03_gummy",
+   "source_dir": "renders/final/s03_gummy",
+   "frames_src": [
+    [
+     1,
+     170
+    ]
+   ],
+   "loop": {
+    "mode": "hold",
+    "held_frames": 10,
+    "period": null,
+    "cyclic": false
+   },
+   "crop_cx": 840.0,
+   "palette": "coral",
+   "label": "Slow-mo squash",
+   "cyclic": false,
+   "deviation": "window f1-180 in storyboard_v2 -> f1-170",
+   "note": "pull-out, drop, 0.2x squash, bonk, settle; f170 (at rest, change 0.1-0.3/255) is held for the last 10 frames instead of the whip-pan f171-180. cx 840 keeps the gummy, its floor reflection, the ball from the bonk on and most of the block stack (the wall mirror is out of reach)"
+  },
+  {
+   "id": "c_s04_gallery",
+   "kind": "chapter",
+   "source": "final",
+   "from": "s04_every_dot (v1, identical f1-30)",
+   "source_dir": "renders/final/s04_every_dot",
+   "frames_src": [
+    [
+     11,
+     30
+    ]
+   ],
+   "loop": {
+    "mode": "hold",
+    "held_frames": 160,
+    "period": null,
+    "cyclic": false
+   },
+   "crop_cx": 890.0,
+   "palette": "lemon",
+   "label": "Candy gallery",
+   "cyclic": false,
+   "note": "room-wide breath after the whip-in (the settle ends by f24), then f30 (the push has not started) is held; cx 890 keeps the Seurat, the armchair with the plush bunny, rug, duck and lamp"
+  },
+  {
+   "id": "t_chrome_cow",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_chrome_cow",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 180,
+    "cyclic": false,
+    "meta_loop": 180,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "pink",
+   "label": "Mirror chrome",
+   "cyclic": false
+  },
+  {
+   "id": "t_glass_armadillo",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_glass_armadillo",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     90
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 90,
+    "cyclic": false,
+    "meta_loop": 90,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "lemon",
+   "label": "Glass caustics",
+   "cyclic": false
+  },
+  {
+   "id": "t_disco",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_disco",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     90
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 90,
+    "cyclic": false,
+    "meta_loop": 90,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "violet",
+   "label": "Light flecks",
+   "cyclic": false
+  },
+  {
+   "id": "t_magnifier",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_magnifier",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "none",
+    "period": null,
+    "cyclic": false,
+    "meta_loop": null,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "blue",
+   "label": "Lens refraction",
+   "cyclic": false
+  },
+  {
+   "id": "t_desk_lamp",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_desk_lamp",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "none",
+    "period": null,
+    "cyclic": false,
+    "meta_loop": null,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "mint",
+   "label": "Spot + shadows",
+   "cyclic": false
+  },
+  {
+   "id": "t_lightbulb",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_lightbulb",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "none",
+    "period": null,
+    "cyclic": false,
+    "meta_loop": null,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "orange",
+   "label": "Filament glow",
+   "cyclic": false
+  },
+  {
+   "id": "t_fruit_sss",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_fruit_sss",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 180,
+    "cyclic": false,
+    "meta_loop": 180,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "coral",
+   "label": "Subsurface",
+   "cyclic": false
+  },
+  {
+   "id": "t_material_balls",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_material_balls",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 180,
+    "cyclic": false,
+    "meta_loop": 180,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "lemon",
+   "label": "Five spheres",
+   "cyclic": false
+  },
+  {
+   "id": "t_jelly_cubes",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_jelly_cubes",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     60
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 60,
+    "cyclic": false,
+    "meta_loop": 60,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "lime",
+   "label": "Squash",
+   "cyclic": false
+  },
+  {
+   "id": "t_duck_pool",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_duck_pool",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     90
+    ]
+   ],
+   "loop": {
+    "mode": "repeat",
+    "period": 90,
+    "cyclic": false,
+    "meta_loop": 90,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "aqua",
+   "label": "Water caustics",
+   "cyclic": false
+  },
+  {
+   "id": "t_sunset_bunny",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_sunset_bunny",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "none",
+    "period": null,
+    "cyclic": false,
+    "meta_loop": null,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "coral",
+   "label": "HDRI rotation",
+   "cyclic": false
+  },
+  {
+   "id": "t_toy_town",
+   "kind": "mini",
+   "source": "placeholder",
+   "from": "t_toy_town",
+   "source_dir": null,
+   "frames_src": [
+    [
+     1,
+     180
+    ]
+   ],
+   "loop": {
+    "mode": "none",
+    "period": null,
+    "cyclic": false,
+    "meta_loop": null,
+    "placeholder_counter": "tile frame 1..180"
+   },
+   "crop_cx": null,
+   "palette": "aqua",
+   "label": "Sun sweep",
+   "cyclic": false
+  }
+ ],
+ "center": {
+  "id": "c_painting",
+  "path": "renders/hex_tiles/c_painting/still.png",
+  "res": [
+   2544,
+   2204
+  ],
+  "source": "preview",
+  "from": "renders/preview/s04_subject/overscan.png",
+  "written": "2026-11-20T16:14:48"
+ },
+ "deviations": [
+  "c_s01_night window f31-120 -> f31-105 (ping-pong). f106-120 is the launch: the orb leaves the frame, the world blooms ink -> lilac -> sky and the camera dollies in (frame-to-frame change up to 23.6/255). It turned the one dark tile into a second day tile and, under either loop mode, flashed it bright on finale f76-105 while the letters land. f101-105 (white orb at rest, 0.1-0.4/255 change) is a clean ping-pong turn. To restore the spec window: windows=[(31, 120)] in CHAPTERS.",
+  "c_s03_gummy window f1-180 -> f1-170 + hold f170 x10. f171-180 is S03's whip-pan exit (20-34/255 change per frame); it would smear one ring-1 tile across the film's last 10 frames, during the calm title hold. f166-170 is at rest (0.1-0.3/255). To restore: windows=[(1, 180)], loop='none'."
+ ],
+ "decisions": {
+  "c_s01_night": "cx 960 (island centred, orbs at y ~110 px stay inside the hex top); ping-pong period 148",
+  "c_s01_day": "cx 960 (probe left edge x 380 vs hex boundary 371 at its height; globe and gnomon shadow inside); ping-pong turns on the settled tilt wobble at f240 (0.12-0.36/255) and plays glide + click 4 back; clicks land on finale beats 16/31/46/61. Considered: an exact seamless 60-frame loop (f135 == f195, 0.04/255) with a click on every beat, rejected as too busy behind the title and outside the spec window",
+  "c_s02_wide": "cx 1000 (drop-ins, orb, crystal bunny, most of the mirror ball; the scene is wider than the hex); the two windows join with a 6-frame cross-fade (same camera, only the orb moved); the loop is a 6-frame cross-fade (period 108) because a ping-pong would reverse the mirror-ball push at full speed (16/255 per frame)",
+  "c_s02_macro": "cx 840 (lemon ball with its hot focal caustic, heart with its pink caustic; the ring sits on the frame edge and shows as a sliver at the right vertex); ping-pong period 118 (rest at f120)",
+  "c_s03_gummy": "cx 840 (gummy, its floor reflection, the ball from the bonk on, most of the block stack; the wall mirror cannot fit with the gummy)",
+  "c_s04_gallery": "cx 890 (Seurat, armchair + plush bunny, rug, duck, lamp); f11-30 then f30 held x160 per spec (the camera settle ends by f24)",
+  "palettes": "chapter colours blue/blue/mint/mint/coral/lemon (v1 rim colours); minis by background family: pink, lemon, violet, blue, mint, orange, coral, lemon, lime, aqua, coral, aqua (meta bg recorded as meta_bg)"
+ },
+ "qa": [
+  "Geometry, independent rebuild: 34 chapter-tile frames (all loop seams, turns, holds, cross-fade frames) rebuilt from SOURCE.json (crop box + per-frame map) with cv2.warpAffine Lanczos4: mean |d| 0.019-0.123/255, p99 <= 1.52/255; the same comparison shifted by 1 px gives 0.38-1.90/255, so the crop is sub-pixel exact",
+  "Frame maps verified at every seam: c_s01_night 75->f105, 76->f104, 148->f32, 149->f31; c_s02_wide 55-60 = f55-60 x 6/7..1/7 + f121-126 x 1/7..6/7, 109-114 = f175-180 -> f1-6, 115 -> f7; c_s02_macro turns at 60/61 and 118/119; c_s03_gummy 170-180 = f170; c_s04_gallery 20-180 = f30",
+  "All 3240 tile frames: 1152x998, 16-bit, colour type RGB; centre 2544x2204 16-bit RGB",
+  "Preview path vs final path (same tile, sandbox): best alignment shift (0, 0); residual 2/255 = preview content",
+  "Sandbox (fake render tree, real frames via symlinks): a final frame with a valid IEND but corrupt data -> decode failure -> the whole tile rebuilt from preview (no mixing); synthetic 60-frame mini final -> byte copies + hard links (h_0001 = h_0061 = h_0121), cyclic; 576x499 8-bit preview mini -> 1152x998 16-bit; missing mini -> placeholder; preview overscan -> 2544x2204 16-bit; no S04 meta -> storyboard geometry; two-rename swap fallback leaves no stale dirs",
+  "Idempotency: second run = 19/19 up to date, nothing rewritten; a changed mini meta refreshes SOURCE.json only",
+  "--require-final exits 2 and lists the 12 placeholder minis + c_painting (preview); --only and --dry-run work",
+  "Centre placeholder vs the S04 preview overscan: phase-correlation shift 0.001 / 0.008 px, 40-row band correlation >= 0.95 including the mirrored top (after adopting S04's PINGPONG band from its meta)",
+  "Placeholder band optimisation is pixel-identical to the full-frame version (max |d| 0)",
+  "Visual review of the contact sheet and of hex-masked chapter tiles on lavender: saturated, no grey, heroes inside the hex"
+ ],
+ "notes_for_other_builders": [
+  "s05_finale: read renders/hex_tiles/manifest.json; per tile 'first' is the h_0001.png to load as a 180-frame sequence starting at finale frame 1. 'cyclic' is true only where frame 180 -> 1 is seamless (currently none: minis become cyclic when their meta loop is 60/90/180 and they are real). For repeats with frame offsets on non-cyclic tiles, the wrap 180 -> 1 is a jump.",
+  "s05_finale: c_s04_gallery is a still from tile frame 21 on (spec '+ hold'); place it where a still cell is not conspicuous.",
+  "s05_finale: c_s01_night is the only dark tile (ink background).",
+  "s04_subject: the preview overscan matches the painting-scan geometry from your meta to 0.01 px; once the final overscan (2544x2204, 16-bit) exists, re-run this script: it is byte-copied and the seam QA can use it directly.",
+  "t_* builders: a tile is used only when every frame 1..loop (or 1..180 when loop is null) is complete in renders/final or renders/preview; sparse test renders keep the placeholder."
+ ],
+ "open_issues": [
+  "The twelve mini tiles are placeholders until their previews/finals are complete; the centre is from the S04 preview overscan. Re-run the script (anytime) and with --require-final in the finals queue.",
+  "c_s04_gallery source is the v1 fallback (renders/final/s04_every_dot) until renders/final/s04_subject f11-30 exists; the switch is automatic.",
+  "Two window deviations (c_s01_night, c_s03_gummy) await the lead's sign-off; each is a one-line revert in CHAPTERS."
+ ]
+}

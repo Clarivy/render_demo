@@ -28,6 +28,21 @@ Note: scripts/make_mp4.sh converts RGB->YUV with swscale's default BT.601 matrix
 so players that assume BT.709 for HD shift hues slightly. The encodes here set out_color_matrix=bt709 and
 tag the stream. The intermediates in renders/film*/ are rewritten on every run; out/ keeps final and preview
 apart.
+
+Film v2 (docs/storyboard_v2.md section 6): --film v2 (default v1, whose behaviour and paths are unchanged).
+  tools/venv/bin/python -I scripts/assemble.py --film v2 --mode final --master
+  tools/venv/bin/python -I scripts/assemble.py --film v2 --mode preview --allow-missing
+  tools/venv/bin/python -I scripts/assemble.py --film v2 --dry-run          # print the plan, write nothing
+  * table docs/shots_v2.json (S01-S03 = the v1 shots and frames, s04_subject, s05_finale): 960 frames, 32.0 s.
+    Film length, shot list and cut pairs (240|241, 420|421, 600|601, 780|781) all come from the table.
+  * intermediates renders/film_v2, renders/film_comp_v2, renders/film_comp_clean_v2; overlays from
+    `make_overlays.py --film v2` in renders/overlays_v2.
+  * outputs in out/v2/ (preview: out/v2/preview/): LaRenderer_opening_v2.mp4, LaRenderer_opening_v2_clean.mp4,
+    (--master) LaRenderer_opening_v2_master.mov, LaRenderer_opening_v2_clean_master.mov, cuts.png,
+    overview_1fps.png (captioned film frames 15, 45, ... one per second, 8 x 4 grid of 320 px tiles, made with
+    scripts/contact_sheet.py like out/overview_1fps.png) and assembly.json.
+  * extra film QA: no overlay pixel anywhere in the finale (781-960).
+  v1 never writes overview_1fps.png unless --overview is given (out/overview_1fps.png is a v1 deliverable).
 """
 import argparse
 import json
@@ -47,7 +62,17 @@ FFMPEG = os.path.join(ROOT, "tools", "ffmpeg", "ffmpeg")
 FFPROBE = os.path.join(ROOT, "tools", "ffmpeg", "ffprobe")
 PY = os.path.join(ROOT, "tools", "venv", "bin", "python")
 FW, FH, FPS = 1920, 1080, 30
-CUT_PAIRS = [(240, 241), (420, 421), (600, 601), (780, 781)]
+CUT_PAIRS = [(240, 241), (420, 421), (600, 601), (780, 781)]       # v1; every run derives its pairs from the table
+SLUG_ZONE = (1400, 940)            # x, y: the --slug line sits right of x and below y (v2 caption QA ignores it)
+# Per-film paths and names. v1 is exactly the original layout; v2 is docs/storyboard_v2.md section 6.
+FILMS = {
+    "v1": dict(table="docs/shots.json", frames=900, film="film", comp="film_comp", clean="film_comp_clean",
+               overlays="overlays", out="out", out_preview="out/preview", base="LaRenderer_opening",
+               overview=False, overview_cols=6, tag=""),
+    "v2": dict(table="docs/shots_v2.json", frames=960, film="film_v2", comp="film_comp_v2",
+               clean="film_comp_clean_v2", overlays="overlays_v2", out="out/v2", out_preview="out/v2/preview",
+               base="LaRenderer_opening_v2", overview=True, overview_cols=8, tag="v2 "),
+}
 PALETTE = {"ink": "#1C1A33", "mint": "#2ED8A3", "blush": "#FFD3E4", "lemon": "#FFD23F", "lavender": "#E5DAFF",
            "sky": "#CDE9FF", "offwhite": "#F7F5F2", "pistachio": "#CFF5DD", "cream": "#FFF6EC", "white": "#FFFFFF",
            "coral": "#FF6A5C", "butter": "#FFF0A8", "peach": "#FFDCC7", "blue": "#2E5BFF"}
@@ -83,20 +108,35 @@ def hex_rgb(c):
 
 
 # ------------------------------------------------------------------------------------------------------------
-def film_table(mode):
-    with open(os.path.join(ROOT, "docs", "shots.json")) as fh:
+def film_table(mode, table_rel="docs/shots.json", tag=""):
+    with open(os.path.join(ROOT, table_rel)) as fh:
         shots = json.load(fh)
     table, f_expected = [], 1
     for s in sorted(shots, key=lambda s: int(s["start_frame_in_film"])):
         a, n = int(s["start_frame_in_film"]), int(s["frames"])
         if a != f_expected:
-            raise SystemExit(f"[assemble] docs/shots.json: {s['id']} starts at {a}, expected {f_expected}")
+            raise SystemExit(f"[assemble] {table_rel}: {s['id']} starts at {a}, expected {f_expected}")
+        if "end_frame_in_film" in s and int(s["end_frame_in_film"]) != a + n - 1:
+            raise SystemExit(f"[assemble] {table_rel}: {s['id']} ends at {s['end_frame_in_film']}, "
+                             f"expected {a + n - 1}")
         for fl in range(1, n + 1):
-            table.append(dict(f=a + fl - 1, shot=s["id"], local=fl, n=n,
+            table.append(dict(f=a + fl - 1, shot=s["id"], local=fl, n=n, tag=tag,
                               ground=(s.get("palette_ground") or ["lavender"])[0],
                               src=os.path.join(ROOT, "renders", mode, s["id"], f"f_{fl:04d}.png")))
         f_expected = a + n
     return shots, table
+
+
+def cut_pairs(shots):
+    """(last frame, first frame) at every shot boundary, from the table."""
+    ss = sorted(shots, key=lambda s: int(s["start_frame_in_film"]))
+    return [(int(s["start_frame_in_film"]) + int(s["frames"]) - 1, int(s["start_frame_in_film"]) + int(s["frames"]))
+            for s in ss[:-1]]
+
+
+def overview_frames(n_film):
+    """One captioned frame per second, mid-second (15, 45, ...), as in out/overview_1fps.png."""
+    return list(range(FPS // 2, n_film + 1, FPS))
 
 
 def read_rgb(path, tries=2):
@@ -151,8 +191,8 @@ def placeholder(row, mode, reason):
     d.rounded_rectangle([40, 40, FW - 40, FH - 40], radius=36, outline=ink, width=4)
     d.text((FW // 2, FH // 2 - 40), f"{row['shot']}  ·  f {row['local']:04d} / {row['n']}", font=big, fill=ink,
            anchor="mm")
-    d.text((FW // 2, FH // 2 + 40), f"film frame {row['f']}  ·  {reason} ({mode})", font=small, fill=ink,
-           anchor="mm")
+    d.text((FW // 2, FH // 2 + 40), f"film {row.get('tag', '')}frame {row['f']}  ·  {reason} ({mode})", font=small,
+           fill=ink, anchor="mm")
     return np.asarray(im, np.float32) / 255.0
 
 
@@ -198,6 +238,8 @@ def composite_one(job):
     else:
         write16(clean, bg)
     amax = int(ov[..., 3].max())
+    sx, sy = SLUG_ZONE                                    # alpha outside the optional slug's lower-right zone
+    amax_ns = max(int(ov[:sy, :, 3].max()), int(ov[sy:, :sx, 3].max()))
     if amax == 0:
         relink(comp, os.path.realpath(clean))
     else:
@@ -205,7 +247,7 @@ def composite_one(job):
         a = ov[..., 3:4] / 255.0
         fg = cv2.cvtColor(ov[..., :3], cv2.COLOR_BGR2RGB) * (257.0 / 65535.0)   # 8-bit promoted to 16-bit
         write16(comp, bg * (1.0 - a) + fg * a)
-    return f, status, amax
+    return f, status, amax, amax_ns
 
 
 def run(cmd, label):
@@ -255,14 +297,31 @@ def main():
     ap.add_argument("--skip-overlays", action="store_true", help="reuse renders/overlays as they are")
     ap.add_argument("--no-encode", action="store_true", help="stop after the 16-bit composites")
     ap.add_argument("--jobs", type=int, default=min(24, os.cpu_count() or 4))
+    ap.add_argument("--film", choices=sorted(FILMS), default="v1",
+                    help="v1 (default: docs/shots.json, out/) or v2 (docs/shots_v2.json, out/v2/)")
+    ap.add_argument("--overview", action="store_true",
+                    help="also write overview_1fps.png (always on for v2; v1 only on request)")
+    ap.add_argument("--dry-run", action="store_true", help="print the plan (table, cuts, sources, outputs); "
+                                                           "write nothing")
     a = ap.parse_args()
     t0 = time.time()
+    F = FILMS[a.film]
 
-    shots, table = film_table(a.mode)
+    shots, table = film_table(a.mode, F["table"], F["tag"])
     n_film = len(table)
-    out_dir = os.path.join(ROOT, "out") if a.mode == "final" else os.path.join(ROOT, "out", "preview")
-    dirs = [os.path.join(ROOT, "renders", d) for d in ("film", "film_comp", "film_comp_clean")]
-    ov_dir = os.path.join(ROOT, "renders", "overlays")
+    pairs = cut_pairs(shots)
+    out_dir = os.path.join(ROOT, F["out"] if a.mode == "final" else F["out_preview"])
+    dirs = [os.path.join(ROOT, "renders", d) for d in (F["film"], F["comp"], F["clean"])]
+    ov_dir = os.path.join(ROOT, "renders", F["overlays"])
+    names = {"mp4": F["base"] + ".mp4", "clean_mp4": F["base"] + "_clean.mp4",
+             "master": F["base"] + "_master.mov", "clean_master": F["base"] + "_clean_master.mov"}
+    want_overview = F["overview"] or a.overview
+    if a.film != "v1":    # v1 is frozen: a v2 run never touches a v1 intermediate folder or out/ itself
+        v1 = FILMS["v1"]
+        frozen = {os.path.join(ROOT, "renders", v1[k]) for k in ("film", "comp", "clean", "overlays")}
+        frozen |= {os.path.join(ROOT, v1["out"]), os.path.join(ROOT, v1["out_preview"])}
+        if {out_dir, ov_dir, *dirs} & frozen:
+            raise SystemExit(f"[assemble] film {a.film} would write into a v1 folder; check FILMS")
 
     # 1) sources
     missing = {}
@@ -272,6 +331,25 @@ def main():
         if not r["have"]:
             missing.setdefault(r["shot"], []).append(r)
     n_missing = sum(len(v) for v in missing.values())
+    if a.dry_run:
+        log(f"DRY RUN film {a.film} ({F['table']}), mode {a.mode}: {n_film} frames "
+            f"({n_film / FPS:.1f} s; spec {F['frames']}), cut pairs {pairs}")
+        for s in sorted(shots, key=lambda s: int(s["start_frame_in_film"])):
+            sid, st, n = s["id"], int(s["start_frame_in_film"]), int(s["frames"])
+            miss = len(missing.get(sid, []))
+            log(f"  {st:4d}-{st + n - 1:4d}  {sid:18s} renders/{a.mode}/{sid}/f_0001..{n:04d}  "
+                f"{'all present' if not miss else f'{miss} missing (placeholder with --allow-missing)'}"
+                f"{'  [' + s['source'] + ']' if 'source' in s else ''}")
+        log(f"  overlays     {rel(ov_dir)}/o_####.png  <- scripts/make_overlays.py"
+            f"{' --film ' + a.film if a.film != 'v1' else ''}{' (skipped)' if a.skip_overlays else ''}")
+        log(f"  composites   {', '.join(rel(d) + '/' for d in dirs)}")
+        outs = [names["mp4"], names["clean_mp4"]] + ([names["master"], names["clean_master"]] if a.master else [])
+        outs += ["cuts.png"] + (["overview_1fps.png"] if want_overview else []) + ["assembly.json"]
+        log(f"  outputs      {rel(out_dir)}/: {', '.join(outs)}{'  (--no-encode: no video)' if a.no_encode else ''}")
+        if want_overview:
+            log(f"  overview     frames {overview_frames(n_film)[0]}, {overview_frames(n_film)[1]}, ... "
+                f"{overview_frames(n_film)[-1]} ({len(overview_frames(n_film))} tiles, {F['overview_cols']} columns)")
+        return
     if missing:
         lines = [f"  {sid}: local {ranges([r['local'] for r in rows])}  (film {ranges([r['f'] for r in rows])})"
                  for sid, rows in missing.items()]
@@ -287,6 +365,8 @@ def main():
     # 2) overlays
     if not a.skip_overlays:
         cmd = [PY, "-I", os.path.join(ROOT, "scripts", "make_overlays.py"), "--jobs", str(a.jobs)]
+        if a.film != "v1":
+            cmd += ["--film", a.film, "--out", ov_dir]
         if a.slug:
             cmd.append("--slug")
         p = run(cmd, "overlays (scripts/make_overlays.py)")
@@ -304,12 +384,13 @@ def main():
                 os.remove(os.path.join(d, fn))
 
     jobs = [(r, a.mode, dirs, a.allow_missing) for r in table]
-    stats, alpha = {}, {}
+    stats, alpha, alpha_ns = {}, {}, {}
     import multiprocessing as mp
     with mp.get_context("fork").Pool(a.jobs) as pool:
-        for f, status, amax in pool.imap_unordered(composite_one, jobs, chunksize=4):
+        for f, status, amax, amax_ns in pool.imap_unordered(composite_one, jobs, chunksize=4):
             stats.setdefault(status, []).append(f)
             alpha[f] = amax
+            alpha_ns[f] = amax_ns
     if "unreadable" in stats or "bad overlay" in stats:
         bad = stats.get("unreadable", []) + stats.get("bad overlay", [])
         raise SystemExit(f"[assemble] FAIL: unreadable source or overlay frames: {ranges(bad)} (a render may still "
@@ -319,25 +400,37 @@ def main():
     placeholders = sorted(stats.get("placeholder", []))
 
     # 5) QA
-    qa = {"frames": n_film == 900 and len(alpha) == 900,
+    if a.film != "v1" and a.slug:     # v2: the optional slug (own lower-right zone) is not a caption
+        alpha = alpha_ns
+    qa = {"frames": n_film == F["frames"] and len(alpha) == F["frames"],
           "cuts_on_bar_lines": all((int(s["start_frame_in_film"]) - 1) % 60 == 0 for s in shots),
-          "overlay_clear_before_cuts": all(alpha.get(f, 0) == 0 for c, _ in CUT_PAIRS for f in (c - 1, c))}
+          "overlay_clear_before_cuts": all(alpha.get(f, 0) == 0 for c, _ in pairs for f in (c - 1, c))}
+    if a.film == "v2":    # storyboard_v2 section 6: no overlays in the finale
+        fin = max(shots, key=lambda s: int(s["start_frame_in_film"]))
+        f_fin = range(int(fin["start_frame_in_film"]), n_film + 1)
+        qa["finale_overlay_free"] = all(alpha.get(f, 0) == 0 for f in f_fin)
     log("QA film: " + ", ".join(f"{k} {'PASS' if v else 'FAIL'}" for k, v in qa.items()))
 
     # 3) encodes + 4) cut sheet
     os.makedirs(out_dir, exist_ok=True)
     outputs = {}
     sheet = os.path.join(out_dir, "cuts.png")
-    cut_frames = [os.path.join(dirs[1], f"f_{f:04d}.png") for pair in CUT_PAIRS for f in pair]
+    cut_frames = [os.path.join(dirs[1], f"f_{f:04d}.png") for pair in pairs for f in pair]
     run([PY, "-I", os.path.join(ROOT, "scripts", "contact_sheet.py"), sheet, "--cols", "2", "--width", "800"]
         + cut_frames, "cut-pair sheet")
     outputs["cuts"] = sheet
+    if want_overview:
+        ovw = os.path.join(out_dir, "overview_1fps.png")
+        run([PY, "-I", os.path.join(ROOT, "scripts", "contact_sheet.py"), ovw, "--cols", str(F["overview_cols"]),
+             "--width", "320"] + [os.path.join(dirs[1], f"f_{f:04d}.png") for f in overview_frames(n_film)],
+            "overview sheet (1 frame per second)")
+        outputs["overview"] = ovw
     if not a.no_encode:
-        encs = [("captioned H.264", h264_cmd(dirs[1], os.path.join(out_dir, "LaRenderer_opening.mp4"))),
-                ("clean H.264", h264_cmd(dirs[2], os.path.join(out_dir, "LaRenderer_opening_clean.mp4")))]
+        encs = [("captioned H.264", h264_cmd(dirs[1], os.path.join(out_dir, names["mp4"]))),
+                ("clean H.264", h264_cmd(dirs[2], os.path.join(out_dir, names["clean_mp4"])))]
         if a.master:
-            encs += [("captioned ProRes", prores_cmd(dirs[1], os.path.join(out_dir, "LaRenderer_opening_master.mov"))),
-                     ("clean ProRes", prores_cmd(dirs[2], os.path.join(out_dir, "LaRenderer_opening_clean_master.mov")))]
+            encs += [("captioned ProRes", prores_cmd(dirs[1], os.path.join(out_dir, names["master"]))),
+                     ("clean ProRes", prores_cmd(dirs[2], os.path.join(out_dir, names["clean_master"])))]
         t = time.time()
         procs = [(label, cmd, subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True))
                  for label, cmd in encs]
@@ -360,6 +453,11 @@ def main():
                 "placeholders": ranges(placeholders) if placeholders else "", "n_placeholders": len(placeholders),
                 "upscaled_from_preview": len(stats.get("upscaled", [])), "slug": a.slug, "qa": qa,
                 "outputs": outputs, "sources": {r["shot"]: f"renders/{a.mode}/{r['shot']}/" for r in table}}
+    if a.film != "v1":    # the v1 manifest keeps exactly its original keys
+        manifest.update({"film": a.film, "table": F["table"], "seconds": n_film / FPS, "cut_pairs": pairs,
+                         "placeholders_by_shot": {sid: ranges([r["f"] for r in rows])
+                                                  for sid, rows in missing.items()},
+                         "intermediates": [rel(d) for d in dirs] + [rel(ov_dir)]})
     with open(os.path.join(out_dir, "assembly.json"), "w") as fh:
         json.dump(manifest, fh, indent=1)
     log(f"done in {time.time() - t0:.0f}s; manifest {rel(os.path.join(out_dir, 'assembly.json'))}"

@@ -1,0 +1,146 @@
+{
+ "id": "s05_finale",
+ "status": "done",
+ "summary": "s05_finale v2 (storyboard_v2 section 3) is complete and previewed on the real hex-tile library (6 chapter tiles from finals, all 12 minis from preview loops, centre = S04 preview overscan). f1 is S04 f180 at 1:1. The camera then makes one continuous log-distance pull-back. Ring 1 holds the six chapter tiles (f8-20). The honeycomb fills the frame f40-53 (17-21 full tiles, 70-78 % covered), with ripple POPs on 8th notes (f8.5/23.5/31/38.5). The white orb swells out of the girl in white (POP f46) and glides to O, arriving at rest on f61, and the camera follows it down (tilt f48-68) to v1's end framing (at rest f82). The title is v1 +60, with identical lockup. Screens are proven true-colour through Blender's REAL PBR Neutral view: a closed-form inverse plus a 97^3 correction LUT, because Blender implements the view as a 57^3 tetrahedral LUT in lg2 space. The calibration render passes with margin (real frame mean 0.12 / p99 0.49 per 255). Screen light is gated by ray length, so the screens light only their own bezels and the title section matches v1 (mean |d| 1.18/255 below y 420; it was 20/255 before the fix). Bloom comes only from the halo AOV, and the final guard works. Final cost is about 0.40 GPU-h for 180 frames (cap 0.7).",
+ "files": [
+  "/home/qzhao/render_demo/shots/s05_finale.py",
+  "/home/qzhao/render_demo/renders/meta/s05_finale.json",
+  "/home/qzhao/render_demo/renders/review/s05_finale_sheet.png",
+  "/home/qzhao/render_demo/renders/preview/s05_finale/ (60 frames: f1-20, every 5th, f115-125)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/calib/inv_view_delta_97.npy (correction LUT the shot loads)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/calib/chart_2544.png, chart_1272.png, chart_layout.json (calibration chart)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/calib/render/f_0001.png (calibration render, final res)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/calib/calibration_compare.png + .json",
+  "/home/qzhao/render_demo/renders/work/s05_finale/tools/pbrn_lut.py (exact numpy model of Blender's PBR Neutral view)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/tools/build_inv_lut.py, delta_lut.py (inverse / correction LUT builders)",
+  "/home/qzhao/render_demo/renders/work/s05_finale/tools/make_calib_chart.py, calib_compare.py, seam_qa.py, title_unchanged.py, layout_probe.sh, layout_summary.py, speed_check.py, sheet.py",
+  "/home/qzhao/render_demo/renders/work/s05_finale/qa_v2/ (seam_preview.json, seam_final_vs_still_crop.json, title_unchanged_preview.json, mask_layout.json, no_tile_bloom.json, bloom_diff_f050.png)",
+  "/home/qzhao/render_demo/renders/test/s05_finale_final/ (final-mode test frames f1, 15, 30, 60, 100, 150)",
+  "/home/qzhao/render_demo/renders/test/s05_finale/{mask,noglow,gate,probe1,kg025} (QA test renders)",
+  "/home/qzhao/render_demo/docs/reports/s05_finale_build_v2.json"
+ ],
+ "review_images": [
+  "/home/qzhao/render_demo/renders/review/s05_finale_sheet.png",
+  "/home/qzhao/render_demo/renders/work/s05_finale/calib/calibration_compare.png",
+  "/home/qzhao/render_demo/renders/preview/s05_finale/f_0046.png",
+  "/home/qzhao/render_demo/renders/preview/s05_finale/f_0180.png",
+  "/home/qzhao/render_demo/renders/test/s05_finale_final/f_0030.png",
+  "/home/qzhao/render_demo/renders/test/s05_finale_final/f_0150.png",
+  "/home/qzhao/render_demo/renders/work/s05_finale/qa_v2/bloom_diff_f050.png"
+ ],
+ "qa": [
+  {
+   "check": "calibration: grey ramp 0-255 on the frame-filling screen (f1, final res, Blender view)",
+   "value": "mean 0.1076/255, p99 0.467, max 1.319",
+   "pass": true
+  },
+  {
+   "check": "calibration: film palette as rendered (22 swatches)",
+   "value": "mean 0.1676/255, p99 0.852, worst swatch aqua 0.87",
+   "pass": true
+  },
+  {
+   "check": "calibration: real frame (s02_caustics final f100, 1:1)",
+   "value": "mean 0.1157/255, p99 0.49 (1 px blur: 0.0744 / 0.267)",
+   "pass": true
+  },
+  {
+   "check": "calibration: raw palette hexes (informational)",
+   "value": "pink/coral/orange/lemon/blue/gold/lilac/... with a channel at 255 are outside PBR Neutral's output gamut (no emission can show them; they fade to white); lime/mint/aqua/violet/pistachio/cream/ink/white reproduce <= 0.6",
+   "pass": true
+  },
+  {
+   "check": "seam: preview f1 vs renders/preview/s04_subject/f_0180.png",
+   "value": "mean 0.786/255 after 1 px blur (raw 1.477), p99 3.07, shift [-0.003, -0.005] px",
+   "pass": true
+  },
+  {
+   "check": "seam transfer at final res: final f1 vs central 1920x1080 crop of hex_tiles/c_painting/still.png",
+   "value": "mean 0.113 raw / 0.059 blurred, p99 0.46",
+   "pass": true
+  },
+  {
+   "check": "title unchanged: mean |d| below y=420 px, v2 f121-180 vs v1 s05_title preview f61-120 (16 frames)",
+   "value": "worst 1.182/255 (all frames 1.15-1.18)",
+   "pass": true
+  },
+  {
+   "check": "title unchanged: letter bounding boxes (per-letter hue segmentation, preview, in px @1080)",
+   "value": "<= 2 px on 13/16 frames; f122-124 (fuse flash) 8-10 px on one box = segmentation artefact (lit aqua 'e' bleeds into the blue 'r' hue class): the letter-band phase shift is <= 0.034 preview px and the mean |d| 1.4/255 on those frames",
+   "pass": true
+  },
+  {
+   "check": "title lockup (mesh projection) f180 vs v1 f120",
+   "value": "width 73.77 % (v1 73.77), x [251, 1667] (v1 [251, 1667]), baseline 64.88 % (v1 64.88)",
+   "pass": true
+  },
+  {
+   "check": "many-scenes moment (ID mask render, >= 15 full screens and tiles >= 70 % of frame)",
+   "value": "f40 17 / 0.775, f46 21 / 0.756, f50 21 / 0.744, f53 17 / 0.704 (window f40-53; meta geometry [40, 53])",
+   "pass": true
+  },
+  {
+   "check": "final frames layout (f121/f180, mask)",
+   "value": "lowest screen edge 316.0 px (<= 400), lowest bezel 326.0 px, 186 px plain lavender above the letter tops (514 px), 20 full screens, ~2.5 rows, wall touches top/left/right, centre tile fully visible at x 960 (bezel top 4.5 px), screens 160 px wide (bezel 174)",
+   "pass": true
+  },
+  {
+   "check": "pull-back camera",
+   "value": "f1 image hex 2544.0 px wide (d0 0.744 m = 2.096 R), bezel opening 1.006 R so no bezel pixel at f1; centre tile y moves monotonically 540 -> 88 px (f1-82); distance never stalls (>= 0.37 %/frame f2-72, peak 7.8 %/frame f18); overshoot 1.1 % at f75 (within 1 % of the end distance from f71), at rest on v1 CAM_END/TGT_END from f82; DOF rack f46-74; shutter 0.5 (closed on f1)",
+   "pass": true
+  },
+  {
+   "check": "timing (events)",
+   "value": "orb swell f42, born/POP f46, at O f61 (speed 0), split f68, lands [76, 80, 84, 87, 91, 95, 99, 102, 106, 110], converge f113, fuse f121, swap f131, breaths f136/f166, shine f144-158; ring POPs f8.5/23.5/31/38.5 (none after f46)",
+   "pass": true
+  },
+  {
+   "check": "letters never pop into view",
+   "value": "each letter's bbox is off-frame at the frame it becomes visible (L at f57 30 px outside the left edge, 'a' f61 74 px above the top, others >= 97 px above)",
+   "pass": true
+  },
+  {
+   "check": "no bloom on tiles: glow on vs off",
+   "value": "f40 (21 lit tiles, no orb): max |d| 1.0/255, 0 px > 2; f50 / f121: difference only in an orb-centred footprint [347, 179, 607, 417] / [426, 98, 561, 303] (preview px)",
+   "pass": true
+  },
+  {
+   "check": "gain ramp",
+   "value": "1.0 through f60, 0.875 f75, 0.75 at f90 and after (GAIN_END, critic-tunable via S05F_GAIN)",
+   "pass": true
+  },
+  {
+   "check": "tile assignment",
+   "value": "77 cells, 188 neighbour pairs, 0 same-source neighbours, ring 1 = the six chapter tiles in story order, each mini 4-5 times with distinct frame offsets, night tile once",
+   "pass": true
+  },
+  {
+   "check": "guard",
+   "value": "--mode final to renders/final/s05_finale with non-final manifest: REFUSING, exit 4, nothing written; S05F_ALLOW_NONFINAL=1 with --out works",
+   "pass": true
+  },
+  {
+   "check": "final cost",
+   "value": "f15 6.8 s, f30 6.1 s, f60 7.7 s, f100 10.1 s, f150 9.4 s (384 spp, thr 0.02, OIDN, 1920x1080): mean 8.0 s -> 0.40 GPU-h / 180 frames (0.51 at the worst rate) + ~25 s build per job",
+   "pass": true
+  }
+ ],
+ "cost_final_gpu_h": 0.42,
+ "deviations": [
+  "Screen inverse = closed-form Khronos inverse x a 97^3 correction LUT, not the closed form alone. Blender implements 'Khronos PBR Neutral' as lg2 allocation [-9, 10] -> pbrNeutral.cube 57^3 (tetrahedral) -> sRGB, and the closed form misses that by up to ~6/255 (p99 6.3) on saturated colours. Textures are read as Non-Color.",
+  "Screens light only their own bezels and slabs. Secondary rays longer than 0.10-0.22 m see a wall-like lavender BSDF, and the screens are excluded from the Fill light. Without this the 77 full-radiance screens re-lit the cove (floor 20/255 warmer than v1 below the honeycomb).",
+  "f1 is rendered with a closed shutter and a 0.01 px filter (keyed to 1.5 by f5). The linear camera keys f1 -> f2 otherwise put ~1.3 px of zoom blur at the frame edges into the match frame.",
+  "End tile size ~160 px (screen; bezel 174), at the low end of 160-260. With a complete bottom row (needed for >= 70 % coverage at the many-scenes moment) and the lime split orb at y ~367 px, the honeycomb must end <= ~335 px near the centre. The painting tile's bezel sits 4.5 px under the frame top.",
+  "Orb glide f46-61 peaks at ~15 cm/f (> the 10 cm/f light rule). It must cover 1.5 m in 15 frames. The lamp stays off while fast (ramps f56-61) and the orb is <= 10 cm/f from f58.",
+  "Letters are hidden until their v1 fall start (v1 kept them hanging out of view from f1); L enters from the left edge during the pull-back (f57-60) instead of from the top.",
+  "Camera rests on v1's end framing at f82 (spec SETTLE ~f70-80): it is within 1 % of the end distance from f71, overshoots 1.1 % at f75 and returns by f82; v1's 1 % push starts f84."
+ ],
+ "open_issues": [
+  "Tile library is not final yet (minis = preview loops, centre = S04 preview overscan). The final guard refuses until make_hex_tiles.py --require-final passes. Re-run the preview pass after the finals if the critic wants to see them.",
+  "S04 overscan mirror artefact (lead knows): the mirrored strip above the painting folds tree trunks into V/diamond shapes at the top of the centre hex. It is clearly visible ~f10-22 (zoom-blurred, ~13 % of the centre hex height), small by f25, gone from view once the painting is a ~270 px tile. No workaround in this script.",
+  "Title-unchanged letter boxes were measured on preview images (1 px = 2 px @1080). A final-res check belongs in qa_finals.py --film v2 once both finals exist; v1's own script cannot be used for a mask render because it rewrites renders/meta/s05_title.json.",
+  "Final seam vs S04 final f180 not measured (no S04 final yet). The transfer itself is exact at final res (0.11/255 vs the still's centre crop), so the seam will equal S04's own overscan-vs-f180 difference (0.78/255 at preview).",
+  "Out-of-gamut tile pixels (saturated colours with a channel at 255, e.g. flat palette placeholders) show near-white on the screens. No real render contains them."
+ ],
+ "notes_for_critic": "Look at: (1) f1-20 for the match cut and the zoom blur. Peak pull-back speed is 7.8 %/frame at f18 with a 0.5 shutter, so the outer ring-1 tiles enter smeared radially while the centre stays crisp. Reduce E_A or extend E_FA if it reads too fast. (2) f40-53, the many-scenes moment: 17-21 full tiles of ~270 px, the orb born from the girl in white at f45-48. (3) f55-66: the honeycomb slides up and the stage is calm with only the orb (the v1 beat before the split). (4) The end band: 2.5 rows of 160 px tiles touching the frame top, at gain 0.75. Tunables: S05F_GAIN (0.65-0.85), S05F_KDIFF (bezel glow from the screens), S05F_COAT, camera clocks S05F_EA/EFA/EFB/EFC/ST/FOC/REST (verify letters with renders/work/s05_finale/tools/layout_probe.sh + layout_summary.py). The colour proof is in renders/work/s05_finale/calib/calibration_compare.png: the 4th swatch row is the raw palette hexes, which the view cannot display (shown for transparency, not a failure)."
+}

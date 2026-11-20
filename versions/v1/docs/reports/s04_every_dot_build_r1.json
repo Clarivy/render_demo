@@ -1,0 +1,63 @@
+{
+ "id": "s04_every_dot",
+ "status": "ready",
+ "script": "/home/qzhao/render_demo/shots/s04_every_dot.py",
+ "preview_dir": "/home/qzhao/render_demo/renders/preview/s04_every_dot",
+ "preview_frames_complete": true,
+ "review_sheet": "/home/qzhao/render_demo/renders/review/s04_every_dot_sheet.png",
+ "final_s_per_frame": 8.2,
+ "final_test_frames": [
+  "/home/qzhao/render_demo/renders/test/s04_every_dot/f_0020.png",
+  "/home/qzhao/render_demo/renders/test/s04_every_dot/f_0106.png",
+  "/home/qzhao/render_demo/renders/test/s04_every_dot/f_0165.png",
+  "/home/qzhao/render_demo/renders/test/s04_every_dot/f_0166.png",
+  "/home/qzhao/render_demo/renders/test/s04_every_dot/f_0180.png"
+ ],
+ "final_timing_note": "Final mode (20000 px texture, 256 spp, threshold 0.01). The first frame of each process takes 33-43 s, of which about 25-35 s is the one-time 20K decode and GPU upload. Steady state was 6.8-9.2 s/frame while GPU 7 was otherwise idle (f165 6.8 s, f180 8.7 s, f20 9.2 s). A later run, with two other builders sharing GPU 7, took 15.7-22.3 s/frame. Estimated finals: 180 f x ~8.5 s + ~35 s per process, about 0.43 GPU-h (storyboard budget 0.42).",
+ "measurements": [
+  "f180 dot-orb diameter: 468 px at 1920 width (half-max width and height both 468; 466-468 depending on threshold 0.98-0.90). Centre (959.5, 539.5), i.e. exactly centred. S05 f1 should match 468 +-10 px.",
+  "Push target re-measured on the 20000 px scan: the white-disc centroid is at uv (0.27375, 0.56537), world D = (-1.89997, 0.82903, 1.52832). Equivalent diameter 317 texels (bbox 337x326, ~2.9 cm); red ring outer radius ~287 texels. Verification crops: renders/work/s04_every_dot/disc_measure.png and src_c1200.png.",
+  "Dolly: d 8.0743 -> 0.175 m = zoom x46.14. px/texel (on the dolly axis, at the target) 0.02255 (about 1/44) through f31, then 1.0973 from f105 to f180. All three keys are written per frame to renders/meta/s04_every_dot.json.",
+  "1:1 QA (renders/review/s04_crop_compare.png): final f106 and f165 centre 400x400 crops vs the source crop scaled 1.0973x. Offset render-vs-source -0.01/0.00 px, phase-correlation response 0.98, high-pass NCC 0.961, gradient ratio 0.782 (bilinear lookup + Cycles 1.5 px Blackman-Harris filter alone give 0.814 vs a Lanczos resample). Disc tone (0.874, 0.848, 0.781) vs source (0.874, 0.851, 0.782).",
+  "Whip-in: yaw +55 deg at f1, instantaneous speed 16.5 deg/f at f1 (finite difference f1->f2 is 14.9 deg, mirroring S03's last frame), overshoot -1.49 deg at f12, 0 at f20. Shutter 1.0 -> 0.5 over f1-10; frame 0 is keyed so f1's motion blur continues the whip.",
+  "Camera speed from meta diagnostics: max translation 0.27 m/f (f47); max log-zoom rate 8.1 %/f (f68); one pan-speed peak of 1.57 deg/f (f60) handing smoothly to the orbit. Max second difference of pan speed is 0.068 deg/f^2, vs 0.157 at f60 with the storyboard's ease_in_out_sine f31-60 glide, which had a visible kink.",
+  "Flicker (preview strips): static wide f20-30 mean |diff| 0.076/255 (0.03 excluding f20, the last overshoot frame). Hold f106-165 centre crop 0.42-0.45/255 per frame (std 0.005), which equals the 0.05 px/f preview drift (0.34 after drift compensation): no shimmer, no pops. The push-to-hold transition decays monotonically (13.4 -> 2.3 -> 0.17 -> 0.42).",
+  "Wide (f20): the Seurat spans 435 px = 22.7% of the frame width (storyboard about 24%). The 16-bit walls are smooth (2456 levels in a wall patch, residual std 0.6/255); any banding seen is the 8-bit viewer.",
+  "Glow: at f180 the canvas around the orb is about +0.1 display brighter than at f165, so the orb visibly lights the canvas."
+ ],
+ "deviations": [
+  "Push target uv changed (0.2755, 0.565) -> (0.27375, 0.56537), the measured disc centroid, so D moves 3.5 mm along -u. The storyboard's diameter of ~380 texels is really ~317.",
+  "DotOrb radius 0.017 -> 0.0148 m, matching the painted disc so the inflating dot fills it exactly. To keep the fixed 468 px circle match at f180, it springs further out (centre 38.8 mm in front of the canvas instead of 20 mm), and focus pulls to the orb (0.175 -> ~0.136 m instead of 0.155).",
+  "Pop: the dot inflates in place over f165-167 (hidden at f165, a glossy hemisphere on the f166 beat), then a POP spring (2.5, 8) toward the lens from f167. f180 is the spring's turning point, and the end offset is solved so orb_c(180) gives exactly 468 px. Emission 0 -> 6 over f170-180; f-stop 11 -> 4 over f166-176.",
+  "Look-at glide room-centre -> dot: smootherstep over f31-70 instead of ease_in_out_sine over f31-60. The sine's non-zero end acceleration put a kink in the pan speed at f60; the disc is now centred by ~f68 (zoom about x6).",
+  "Hold drift -0.25 -> +0.25 mm along u about D (storyboard 0 -> +0.5 mm), so the orb is centred at f180.",
+  "DOF uses a baked focus distance (|camera - look-at|, then the orb) instead of focus object = target empty.",
+  "Light levels: wash 650 -> 100 W with colour #FFF4E6 -> #D6EEF4 (cool, cancels the room's warm bounce on the canvas); studio_rig key_power 500 -> 100; world strength 0.4 -> 0.15. The storyboard values were about 2 stops over under PBR Neutral (lemon wall rendered #FDD99E, rug #FEB0C3, canvas whites in the tone shoulder). Exposure stays at -0.1.",
+  "Added lights: WallFill AREA 90 W on the butter wall (it read khaki), LampGlow POINT 18 W inside the lamp shade, and FoyerLight SPOT 400 W that only reaches the foyer wall.",
+  "Added set: an off-frame peach 'foyer' wall with four candy frames left of the room, so the f1-6 whip streaks candy colours instead of a blank cream frame (it is out of frame from f7 on). Also a violet velvet gallery bench with gold legs under the van Gogh (complementary accent; the right half of the room was empty).",
+  "van Gogh: UVs cropped to the painted area (the Met JPEG has a black surround); width 0.6 -> 0.8 m with a matching aqua frame.",
+  "Floor: wood_floor peach multiply 0.25 plus a 0.45 screen toward peach (the 4K oak read dark brown).",
+  "Rubber duck: re-hued from the scan's orange to lemon yellow (beak becomes orange), scale 2.5 -> 1.6 (2.5 gave a 71 cm duck), yaw 200 -> 315 (3/4 profile; 200 showed its back).",
+  "Plush bunny 0.32 -> 0.40 m, turned 3/4 toward the camera. Armchair arms 0.18x0.70x0.58 outside the seat, back 1.04x0.22x0.95 to the floor.",
+  "Fruit: lime scan re-hued into a lemon and an orange, plus brightened limes and one kiwi (two brown kiwis read as potatoes). The bowl is a lathed candy-pink bowl instead of a solid cylinder.",
+  "Magnifier lens replaced by a closed ellipsoid glass lens with visible_shadow=False (the glTF lens is open shells and rendered black; with caustics off, a shadow-casting lens leaves the table under it black). Lamp shade is an open truncated cone instead of a closed pointed D.cone."
+ ],
+ "known_issues": [
+  "The 1:1 render is slightly softer than a Lanczos resample of the source (gradient ratio 0.78). This is close to the bilinear-filter limit (0.81); dabs and canvas weave match (NCC 0.96) and are crisp, but not sharper than the source.",
+  "Final-quality motion was verified on stills only (the f20 painting is cleanly filtered, no grain) plus preview-mode strips with the 8192 texture. I did not run a final-mode strip over the early push (f31-60), where the 20K texture is most minified and Cycles has no mipmaps. Please watch f31-60 of the finals for any boiling.",
+  "The f180 orb is a flat white emissive disc, matching S05's halo look. Its glow on the canvas is a +0.1 overall brightening, not a localised bloom.",
+  "Polish: the floor reads warm tan (#A18264-#D3AE8C) rather than clearly peach, and the fruit bowl and magnifier are tiny in the wide (~2.5% of frame width) so they barely register.",
+  "Whip continuity assumes S03 yaws -55 deg about world Z with ease_in_cubic over f171-180 (16.5 deg/f at its last frame). Check the 600|601 cut on the cut-pair sheet once S03 exists.",
+  "The preview frames were rendered just before a meta-only change (px_per_texel now measured along the dolly axis, so it is meaningful during the whip). Pixels are unaffected. The meta was last regenerated in final mode, so its 'texture' field names the 20000 px file.",
+  "8-bit viewers show contour banding on the pastel walls of the 16-bit finals; the data itself is smooth."
+ ],
+ "dopa_bugs": [
+  "Not a crash, but surprising: D.bake -> linearize() sets every keyframe on the owner ID's action to LINEAR. For example, baking scene 'render.motion_blur_shutter' linearizes all scene fcurves. It is harmless when everything is baked, but it silently changes any BEZIER keys on the same ID.",
+  "D.camera(fstop=...) always sets dof.focus_object to the target empty. A keyed dof.focus_distance needs cam.data.dof.focus_object = None afterwards (worked around).",
+  "Feature gap: no shadow-transparent option for small decorative glass. With caustics off, mat_glass casts an opaque black shadow (worked around with visible_shadow=False on the magnifier lens).",
+  "Feature gap: D.cone is closed and pointed, with no truncated/open variant (custom open_cone helper used for the lamp shade).",
+  "Asset/storyboard notes, not dopa: the magnifying_glass_01 lens is four open shells; the van Gogh JPEG includes a black surround; the storyboard's S04 light powers are about 2 stops hot under PBR Neutral; the storyboard's push-target uv is ~35 texels off the disc centroid."
+ ],
+ "iterations": 10,
+ "self_critique": "The shot meets every fixed spec, and the C4 proof reads. There is one unbroken 46x dolly on the 20K asset. It ends square at f/11 on a 1:1 frame that matches the source dab for dab (aligned to <0.03 px, NCC 0.96, tone within 0.003 on the disc). The 0.5 mm drift shows a perfectly uniform frame difference (no shimmer). The orb lands at exactly 468 px, centred, on a spring turning point. The strongest moments are the whip (candy streaks from the off-frame foyer), the pass over the plaid armchair as the room falls away, and the f166 beat, where the painted white dot inflates into a glossy candy pearl inside Seurat's red ring. The biggest mid-course fixes were exposure (the storyboard lights were ~2 stops hot and greyed the palette) and a real kink in the camera's pan speed at the f60 look-at hand-off, now C2-smooth. Weaker points: the room-wide is charming and saturated but fairly evenly lit, with soft and shallow contact shadows, so it reads more 'clean toy render' than 'premium commercial'. The floor leans tan, and the fruit bowl and magnifier are too small to register at 1/44 zoom. The final glow is a flat white disc rather than a luminous bloom. 1:1 crispness sits at the bilinear-filter ceiling (0.78 of a Lanczos resample), so it is truthful but not hyper-sharp. I verified finals on stills and on preview strips, not on a final-mode strip of the early push. With another hour I would deepen the key/fill contrast in the wide, warm the floor toward peach, and run a 20-frame final strip over f31-60."
+}

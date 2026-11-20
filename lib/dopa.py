@@ -98,7 +98,9 @@ def reset_scene():
     return sc
 
 
-ALLOWED_GPUS = {"6", "7"}  # project rule: at most 2 GPUs on the shared box -> only GPU 6 and GPU 7
+# Outside Slurm: the GPUs this project may use on a shared box. Default 6,7 (the original br-dfw-h200-tlv1-10
+# rule: at most 2 GPUs there). Override per machine with DOPA_ALLOWED_GPUS, e.g. "0" or "0,1" on a workstation.
+ALLOWED_GPUS = {g.strip() for g in os.environ.get("DOPA_ALLOWED_GPUS", "6,7").split(",") if g.strip()}
 
 
 def _in_slurm_gpu_job():
@@ -118,13 +120,15 @@ def _gpu_guard():
         return
     if not ids or not set(ids) <= ALLOWED_GPUS:
         sys.stderr.write(f"[dopa] REFUSING TO RENDER: CUDA_VISIBLE_DEVICES={vis!r}; this project may only use "
-                         f"GPU 6 and/or 7. Run e.g.  CUDA_VISIBLE_DEVICES=6 tools/blender/blender ...\n")
+                         f"GPU(s) {','.join(sorted(ALLOWED_GPUS))} outside Slurm (set DOPA_ALLOWED_GPUS to change). "
+                         f"Run inside a Slurm GPU job, or e.g.  CUDA_VISIBLE_DEVICES=6 tools/blender/blender ...\n")
         sys.stderr.flush()
         os._exit(3)
 
 
 def enable_gpu(backend: str = "CUDA"):
-    """Use every GPU of `backend` that is visible. CUDA_VISIBLE_DEVICES must be set to 6 and/or 7 (guarded)."""
+    """Use every GPU of `backend` that is visible. Guarded: a Slurm GPU allocation, or CUDA_VISIBLE_DEVICES within
+    DOPA_ALLOWED_GPUS (default 6,7) outside Slurm."""
     _gpu_guard()
     prefs = bpy.context.preferences.addons["cycles"].preferences
     prefs.compute_device_type = backend

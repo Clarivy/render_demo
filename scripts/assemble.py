@@ -204,9 +204,13 @@ def write16(path, rgb):
 
 
 def relink(link, target):
+    """Relative symlink link -> target. Both ends are resolved first, because the kernel follows a relative link
+    from the link's REAL directory: with renders/ itself a symlink (renders -> /beegfs/.../renders), a relpath taken
+    from the symlinked path to a resolved target points outside the tree (the v2 cut sheet broke on that)."""
     if os.path.lexists(link):
         os.remove(link)
-    os.symlink(os.path.relpath(target, os.path.dirname(link)), link)
+    real_dir = os.path.realpath(os.path.dirname(link))
+    os.symlink(os.path.relpath(os.path.realpath(target), real_dir), link)
 
 
 # ------------------------------------------------------------------------------------------------------------

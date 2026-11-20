@@ -42,7 +42,7 @@ import threading
 import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-ALLOWED = {"6", "7"}
+ALLOWED = {g.strip() for g in os.environ.get("DOPA_ALLOWED_GPUS", "6,7").split(",") if g.strip()}  # outside Slurm (lib/dopa.py)
 ORDER = ["s02_caustics", "s01_lights_world", "s03_gummy", "s04_every_dot", "s05_title"]
 CHUNK = {"s02_caustics": 16, "s01_lights_world": 40, "s03_gummy": 24, "s04_every_dot": 45, "s05_title": 60}
 LOGDIR = os.path.join(ROOT, "logs", "finals")
@@ -491,7 +491,8 @@ class Runner:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--shots", default=None, help="v1 default: all five v1 shots; v2: see the module docstring")
-    ap.add_argument("--gpus", default="6,7")
+    ap.add_argument("--gpus", default=",".join(sorted(ALLOWED)),
+                    help="GPU ids (outside Slurm: within DOPA_ALLOWED_GPUS, default 6,7); inside a Slurm job: slurm = all allocated")
     ap.add_argument("--mode", default="final", choices=["final", "preview"])
     ap.add_argument("--frames", default=None, help="subset like 1-30,45 (applies to every listed shot)")
     ap.add_argument("--dry-run", action="store_true")

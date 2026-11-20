@@ -1,0 +1,88 @@
+{
+ "id": "s01_lights_world",
+ "status": "ready_with_issues",
+ "changes": [
+  "Phase B is now rendered in the env map's frame of reference. The world mapping stays fixed; all objects, lamps and the camera are children of an empty 'EnvFrame' whose rotation is the mapping rotation M = Rz(-theta)*Rx(-phi). Every frame is the same image as 'locked camera, rotating env', but Cycles now motion-blurs the env rotation: shadows, probe reflection and skylight smear with the same 0.5 shutter as the globe. This fixes the strobing clicks at zero extra cost. Motion steps 3 on every mesh and the camera keep the rigid co-rotation sharp.",
+  "Cycles 4.5 bug workaround: with persistent data, a static frame rendered right after a moving frame lost the metal objects and the globe (reproduced: f150/f165/f180 broke when rendered after a moving frame). A 10-micron vertical jitter of the whole rig at half-frames gives every object motion data in every frame. It is invisible: the camera moves with the set, and the loop check still passes.",
+  "Lead S01.1: during the launch the camera dollies in over f108-120 (log-distance, slerped view direction, ease_in_out_sine; static f105-108, so C1) to a phase-B pose locked f121-240: (-0.06,-5.546,2.118) aimed at (-0.06,0.12,0.00), 46 mm. The plate spans 63.9% of the frame width; nodus top at 80 px, cake bottom at 1025 px. Nothing is in the lat-long strip box; only the blue cake band passes under the caption zone. Phase A keeps the round-1 wide framing.",
+  "Lead S01.2: sky globe radius 0.20 -> 0.26 on a re-proportioned gold stand, moved to (-0.45,0.95) so the thicker nodus never overlaps it. Day emission 0.3 -> 0.6, texture saturation x1.8, coat 1.0 -> 0.5. Bigger pink crank (arm 0.23, knob radius 0.045). Ray-cast: 111/116 visible-hemisphere samples unobstructed (the rest hit its own meridian).",
+  "Lead S01.3 and G2: day light is split into SUN = max(candy_sky - candy_sky_nosun, 0), unchanged, and SKY = nosun x saturation 1.8 x 1.25. Shadows now read lavender-blue: gnomon shadow L*47 a*+10 b*-18, C* about 20 (round 1: C* 6). The lit plate stays cream-white (b* +3). The bunny's shaded flank shifts lavender-blue -> violet-magenta as theta changes (C* 21-27).",
+  "Critic 'grey probe': the same sky part x1.5 is added for GLOSSY rays only. The probe now shows a bright lavender sky, vivid cards and a blush-pink ground (no longer mauve mud); the sun is not boosted.",
+  "Critic 'off-beat accents' (hit frames unchanged): clicks are a snap c(t)=ease_out_back(t/12, s=0.87) from each beat frame (26 deg on the first frame, 2.5 deg detent overshoot, exactly 1 from t=12). Ticks pop at t=6-10 with a volume-preserving squash-stretch, amplitude 0.30. Split lights travel with ease_in_out_sine over f51-61 (peak 0.11 m/f, was 0.235) and land ON f61; the coloured halos pop to 1.2 exactly on f61 and spring-settle. Launch: crouch along the sun direction bottoming on f105, release + 1.30/0.88 stretch on f106.",
+  "Critic 'opaque halos': halos are additive, Emission(k/2) + Transparent on both faces. A lone halo looks identical to the old one; overlaps sum (coral+lime = yellow, lime+blue = aqua, all three = white). Coloured halo emission is 2.0 x (0.49, 1.05, 0.94), so the full overlap is neutral. W shrinks inside the growing coloured halos at f51-56 and grows under the converging ones at f97-101: no pop and no size dip. The G1 bloom parameters are unchanged.",
+  "Critic 'parked halo speck': W's halo dissolves inside the frame (ease_in_cubic f107-111, last seen about 60 px below the top edge) and is render-hidden from f112. Coloured halos are hidden outside f51-103.",
+  "Critic 'hidden ending': the glide is reversed, theta 360 -> 315 over f196-225. The shadow sweeps across the open front of the dial onto the violet tick (270 deg), in clear view. The tilt is now about world X (phi > 0 raises the sun), so the nodus shadow breathes toward and away from the camera. The violet tick pops f225-229. New meta key 'tilt_axis': 'x'.",
+  "scripts/make_overlays.py (post-tools file): minimal, backward-compatible edit. The lat-long Strip reads 'tilt_axis' from renders/meta/s01_lights_world.json (default 'y') and uses Rz(-theta)*Rx(-phi) when it is 'x'. Backup: renders/work/s01_lights_world/make_overlays_pre_r2_s01.py. Tested into a scratch folder: selftest ok, chip reads 'theta 315 . tilt +-4'.",
+  "Critic 'pale day': ring white -> candy aqua; cake 0.26 -> 0.30 m and about 2x larger on screen. Day frames now have 8.4-8.8% of pixels at C* > 40 (round 1: 3.5%) and frame mean C* about 20-22.",
+  "Critic minors adopted: gnomon radius 0.032 -> 0.045 (collar 0.08) and nodus 0.10 -> 0.12; moon rim 180 -> 350 W with the gnomon collar, globe stem and meridian excluded (f10 frame mean 20/255, was 10); night glossy sky 1.0 -> 2.0, so the probe reads indigo chrome.",
+  "Final sample budget: f1-120 at 384 spp, f121-240 at 256 spp, set by a final-mode-only frame_change_pre handler (an explicit --samples overrides it). Versus 384 spp the day frames differ by a mean of 0.22-0.25/255, only on anti-aliased edges.",
+  "Rewrote the 'Round 2 changelog' (R1-R12) in the script header; the round-1 deviations list is kept."
+ ],
+ "lead_notes_status": [
+  "G1 one glowing light: done. The compositor bloom parameters are untouched (BLOOM, HIGH quality, threshold 0.6, smoothness 0.2, strength 1.0, size 0.45, saturation 1.0, Emit pass only). The white halo still renders as a uniform radiance-4 disc. Note for S05: if its fuse uses the same light-marker halo, switch it to the additive Emission(k/2) + Transparent version so the three-into-white sum reads the same way.",
+  "G2 no grey: done. Day shadows are tinted lavender-blue (C* about 20, hue about 300), the plate stays cream-white, the backdrop stays lavender -> sky pastel, and the night shadows stay on palette. Only the orbs, the sun and specular highlights clip.",
+  "G3 keep what works: all QA re-run; numbers are in qa_results. Loop 0.043/255, landing azimuths within 1 deg, night colours and black core unchanged.",
+  "G4 cost cap S01 <= 0.4 GPU-h: met, about 0.27 GPU-h estimated from uncontended 3.8-4.0 s/f (day frames at 256 spp, night at 384).",
+  "G5 glass: not applicable (S01 has no glass).",
+  "S01.1 tighter day framing: done. Dolly f108-120 inside the launch, C1 with zero velocity at both ends; pose locked exactly f121-240; plate at 63.9% width (target 62-68%); strip box and caption zone clear of important elements; phase A keeps the wide framing.",
+  "S01.2 sky globe: done. Radius 0.26, day emission 0.6, saturation x1.8, coat 0.5, bigger pink crank; 111/116 visible-hemisphere samples unobstructed. It reads as a small sky-blue and pink world with vivid cards.",
+  "S01.3 (nice to have) coloured skylight on the bunny: partly done. Its shaded flank moves from lavender-blue (theta 0, C* 21) to violet-magenta (theta 270, a* +20, C* 27) and violet-blue (theta 315). Warm card colours (orange, lemon) never show strongly on it."
+ ],
+ "qa_results": [
+  "Storyboard sec. 7 loop check on the full preview: mean |f195 - f135| = 0.043/255 (limit 0.5), PASS; max 13 levels, p99 1. Also 0.044/255 in the standalone test.",
+  "Gnomon-shadow azimuths from the orthographic top view (set frame), measured at r 0.12-0.24 m: f121 315.0, f135 315.0, f150 45.9, f165 135.0, f180 224.0, f195 315.0, f225 269.2 deg. Expected 315/315/45/135/225/315/270, so every error is within 1 deg. The f225 target changed from 0 to 270 with the reversed glide.",
+  "Single-occlusion colours, f61 preview, on the plate top: lemon-yellow L*77.6 C*66 hue 99; violet L*52.6 C*71 hue 314; aqua small and mostly hidden behind the ring (C*38). At f91 the colours are permuted (violet 7430 px hue 310, lemon 2293 px hue 99.5).",
+  "Triple-occluded core stays black with the brighter night glossy sky: the darkest plate-top pixels have max(RGB) 0-2 at f61 and f91 (requirement < 3/255).",
+  "Landing visibility, ray-cast from the phase-B camera (13 samples per landing): 315 12/13, 45 13/13, 135 11/13 (the probe hides the blob's far rim r1.37 and its left edge), 225 12/13, 270 9/13 (the remaining samples hit the violet tick itself, as intended). Gnomon base visible.",
+  "Hold segments, full preview, mean |consecutive diff|: f121-135 0.040, f148-150 0.078, f163-165 0.075, f178-180 0.076, f193-195 0.083/255. Dither level only: no flicker and no vanishing objects.",
+  "Accent timing, mean |diff| per step: the orb pop jumps on 15->16 (7.0). The split peaks mid-travel and stops on f61 (60->61 0.35, 61->62 0.25). The merge settles on f100->101. Each snap shows its blur onset on the beat frame (135->136 0.84) and its biggest step on beat+1 (136->137 6.4, 151->152 4.8, 166->167 5.4, 181->182 5.9).",
+  "Tail f226-240 now moves in view: 0.14-1.18/255 per frame (round 1: 0.12-0.61, hidden behind the bunny).",
+  "Day colour: share of pixels at C* > 40 is 8.4-8.8% (round 1 3.5%, critic target 10%); frame mean C* 19.8-21.6.",
+  "Final quality: no fireflies or OIDN blotching in crops; 256 vs 384 spp differ by 0.22-0.25/255 mean, only on anti-aliased edges.",
+  "Overlay test (scratch folder): selftest ok, theta and tilt read from meta, tilt chip '+-4'. Meta check: theta(137)=26.16, theta(195)=360, theta(225)=315, max |tilt| 4.23, camera_view_az_deg 90."
+ ],
+ "final_s_per_frame": 3.9,
+ "est_gpu_hours": 0.27,
+ "preview_frames_complete": true,
+ "review_sheet": "/home/qzhao/render_demo/renders/review/s01_lights_world_sheet.png",
+ "known_issues": [
+  "NEEDS LEAD SIGN-OFF: the reversed glide changes two storyboard numbers. The sec. 4 glide target 405 becomes 315, and the sec. 7 QA expectation '0 deg (f225)' becomes '270 deg (f225)'. The tilt axis also changes from Y to X.",
+  "I edited scripts/make_overlays.py, which the post-tools engineer owns: the Strip now reads 'tilt_axis' from the S01 meta (default 'y'). Backup at /home/qzhao/render_demo/renders/work/s01_lights_world/make_overlays_pre_r2_s01.py. I did not regenerate the shared renders/overlays/ frames: they still show theta 360->405 for f196-238 until make_overlays.py is re-run. Its storyboard fallback formula (theta(225)=405, used only if the meta is missing) was left as is.",
+  "Each snap's biggest frame-to-frame step lands one frame after the beat; the beat frame itself only shows the blur onset. Starting the snap a frame earlier would put motion inside f135's shutter and break the f135 = f195 loop check. The remaining option is motion_blur_position = 'START'; I did not test it.",
+  "The Cycles persistent-data bug (metal objects and the globe vanish in a static frame rendered after a moving frame) is only worked around with a 10-micron half-frame rig jitter. Removing that guard brings the bug back.",
+  "Day frames reach 8.4-8.8% saturated pixels, still short of the critic's 10% target.",
+  "In phase B the caption pill and theta chip will sit over the lower-left of the blue cake band, an overlap rather than a tangent. The cake bottom is 55 px from the frame bottom.",
+  "The mint (135 deg) landing loses the blob's far rim and left edge to the probe (11/13 samples visible); the line, blob centre and tick are visible.",
+  "Cold open: faint warm reflections of the night glossy sky remain on the gold globe base and gnomon collar, now much dimmer than the lavender moon rims.",
+  "The coral orb reads slightly red (total halo emission 0.98, needed for the neutral overlap). Lime and blue read true.",
+  "Timing was measured on a shared GPU 6 (11-17 s/f while the S03 and S05 finals ran). The 3.8-4.0 s/f uncontended figures come from moments when GPU 6 was idle, so the 0.27 GPU-h estimate could be about 25% higher in practice; that is still under the 0.4 cap.",
+  "Not my shot: the S02 side of the 240|241 cut should start its orb fall at local f1-3, as the critic suggested."
+ ],
+ "self_critique": "The day half now reads as a premium toy shot instead of a pale product render. The island fills about 64% of the frame. The probe and globe show a bright candy sky with vivid cards, the shadows are tinted lavender instead of grey, the aqua ring and bigger blue cake add colour blocks, and the ending lands in clear view on the violet tick with the shadow visibly breathing.\n\nTwo technical choices did most of the work. Rendering phase B in the env's frame gives physically correct motion blur of the env rotation, which is better than the critic's supersampling (that would have shown 5 discrete shadow copies at 26 deg/f) and costs nothing. Splitting the map into its sun and sky parts let me tint shadows and lift reflections without touching the calibrated sun, the shadow geometry or the loop check. I also found a real Cycles persistent-data bug that round 1 never hit (static frames after moving frames lost every metal object) and guarded against it.\n\nStill weak:\n- The snap accents land one frame late (blur onset on the beat, main step on beat+1).\n- Saturated pixels are about 9%, not 10%.\n- The bunny's flanks go cool lavender/violet but never take on the warm card colours.\n- The fast snaps make the shadows briefly faint smears. That is correct and reads as a smear frame, but it could be judged too soft.\n- The reversed glide still needs the lead's sign-off.\n- I edited the post-tools overlay script, so that owner should review the 8-line change and re-run make_overlays.py.\n- Timing numbers are noisy because the GPU was shared.",
+ "final_test_frames": [
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0061.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0113.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0140.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0165.png",
+  "/home/qzhao/render_demo/renders/test/s01_lights_world/f_0229.png"
+ ],
+ "measurements": [
+  "Phase-B framing (projected): plate 63.9% of frame width, island y 80-1025 px; strip box (x1456-1840, y80-272) empty; blue tick at y 654-724 and violet tick at y 724-812, both above the caption zone.",
+  "Cost: under the same contention, the round-2 script's phase-B frames take about 1.65x round 1's. Motion steps (1 vs 3) and the jitter guard measured no difference; the ratio matches the larger island area from the tighter framing.",
+  "Final timings with GPU 6 idle: f140 6.9 s (first frame, includes setup), f165 3.8 s and f229 3.8 s at 256 spp, f113 4.0 s and f61 3.8 s at 384 spp. Under contention: 11-17 s/f.",
+  "Full preview: 240 frames at about 1.03-1.15 s/f.",
+  "Shadow tint at f165 / f229: gnomon shadow L*47-49, a* +9..+13, b* -17..-20, C* 19-22; lit plate L*90-93, C* 5-6.",
+  "Cold open f10: frame mean 20.5/255 (round 1: 10); island silhouette outlined by lavender rims."
+ ],
+ "rejected_critic_items": [
+  "Strobing clicks, 5-pass sub-frame supersampling (major): replaced by true Cycles motion blur through the EnvFrame rig. It costs nothing (about 0.15 GPU-h saved), and at 26 deg/f five sub-frames would show discrete shadow copies rather than a blur.",
+  "Off-beat split, radial POP overshoot of about 8% peaking on f61 (part of a major item): rejected. f61 and f91 would then have different light radii, breaking the closed-form 'f91 = f61 geometry, colours permuted' proof. Instead the lights land on f61 with zero velocity and the halos (which light nothing) pop to 1.2 exactly on f61.",
+  "Pale day (d), applying the extra world saturation to the lat-long strip as well: not done, because the strip is a post-tools asset. The saturation goes only to the sky part of the lighting (the sun is left alone so the plate doesn't yellow), and the globe got its own x1.8.",
+  "Lens 46 -> 50 mm with the light ring lowered (minor, optional): superseded by the lead's dolly-in to a tighter phase-B framing. Phase A keeps 46 mm and its orb headroom.",
+  "Night halo radius 0.08 -> 0.10 (minor, optional): kept at 0.08 to hold the G1 protagonist-orb look; NIGHT_GLOSS 2.0 alone makes the probe read.",
+  "Neutral-sum tint, RC 0.50 -> 0.40 (minor, optional): kept at 0.50 per the critic's own 'accept as physically correct' and its 'keep the night geometry' note.",
+  "Launch, optional 2-frame sparkle near the top edge: not added; the in-frame dissolve plus the probe's sun highlight carry the hand-off.",
+  "'Venn rings' storyboard beat: dropped as the critic suggested; the ring is now candy aqua.",
+  "Out-cut, S02 side (start the orb fall at local f1-3): not my shot, so it is left to the S02 owner."
+ ]
+}

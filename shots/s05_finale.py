@@ -35,7 +35,7 @@ Screens (storyboard_v2 3.3)
   (sqrt shaper, trilinear, float atlas built in bpy from renders/work/s05_finale/calib/inv_view_delta_97.npy) that
   turns it into the inverse of Blender's REAL view (OCIO: lg2 allocation [-9, 10] -> pbrNeutral.cube 57^3,
   tetrahedral -> sRGB), which differs from the closed form by up to ~6/255 on saturated colours. Built by
-  renders/work/s05_finale/tools/{pbrn_lut,build_inv_lut,delta_lut}.py (the numpy model of the view reproduces Blender's
+  lib/pbrn_view/{pbrn_lut,build_inv_lut,delta_lut}.py (the numpy model of the view reproduces Blender's
   output to 1 LSB of 16 bit). Calibration render (f1, chart on the frame-filling screen, final res):
   renders/work/s05_finale/calib/calibration_compare.{png,json}: ramp mean 0.11 / p99 0.47, film palette 0.17 / 0.85,
   real frame 0.12 / 0.49 (/255). Display colours the view cannot produce (a saturated colour with a channel at 255,
@@ -832,10 +832,10 @@ LG_MIN, LG_MAX = -9.0, 10.0
 
 def inv_delta_image():
     """The correction LUT delta(t) = a_exact - a_closed (lg2-allocation units) as a float atlas: INV_N slices along
-    blue side by side, red along x, green along y. Built by renders/work/s05_finale/tools/delta_lut.py (inverts
+    blue side by side, red along x, green along y. Built by lib/pbrn_view/delta_lut.py (inverts
     Blender's real view: lg2 [-9, 10] -> pbrNeutral.cube tetrahedral -> sRGB)."""
     if not os.path.exists(INV_LUT):
-        sys.path.insert(0, os.path.join(WORK, "tools"))
+        sys.path.insert(0, os.path.join(ROOT, "lib", "pbrn_view"))   # pbrn_lut / build_inv_lut / delta_lut (in git)
         import delta_lut  # noqa
         Dl, _ = delta_lut.build_delta(INV_N, "sqrt")
         os.makedirs(os.path.dirname(INV_LUT), exist_ok=True)
